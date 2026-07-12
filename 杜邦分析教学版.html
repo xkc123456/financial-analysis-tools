@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>杜邦分析教学版 - 分步学ROE</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#0b1120; color:#e2e8f0; padding:20px; }
+.container { max-width:1100px; margin:0 auto; }
+h1 { font-size:20px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+.sub { color:#64748b; font-size:13px; margin-bottom:16px; }
+.steps { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.step-btn { padding:6px 14px; border-radius:20px; border:1px solid #1e293b; background:transparent; color:#64748b; font-size:12px; cursor:pointer; transition:all .15s; }
+.step-btn.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+.step-btn.done { border-color:#10b981; color:#10b981; }
+.two-col { display:grid; grid-template-columns:300px 1fr; gap:14px; }
+@media (max-width:800px) { .two-col { grid-template-columns:1fr; } }
+.input-panel { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:16px; }
+.input-panel h3 { font-size:12px; color:#64748b; text-transform:uppercase; margin-bottom:10px; letter-spacing:.5px; }
+.grp { margin-bottom:8px; }
+.grp label { display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin-bottom:2px; }
+.grp input { width:100%; padding:6px 10px; background:#0b1120; border:1px solid #1e293b; border-radius:6px; color:#e2e8f0; font-size:13px; }
+.grp input:focus { border-color:#3b82f6; outline:none; }
+.samples { display:flex; gap:4px; margin-top:10px; flex-wrap:wrap; }
+.samples button { padding:5px 10px; border-radius:6px; border:1px solid #1e293b; background:#0b1120; color:#94a3b8; font-size:11px; cursor:pointer; }
+.samples button:hover { border-color:#3b82f6; color:#e2e8f0; }
+.result-panel { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:16px; min-height:320px; }
+.formula-bar { display:flex; gap:12px; padding:10px 14px; background:#0b1120; border-radius:8px; margin-bottom:12px; font-size:13px; flex-wrap:wrap; align-items:center; justify-content:center; }
+.formula-item { text-align:center; }
+.formula-item .num { font-size:18px; font-weight:700; color:#e2e8f0; }
+.formula-item .lbl { font-size:10px; color:#64748b; }
+.formula-item .op { font-size:20px; color:#475569; padding:0 4px; }
+.interpret { background:#0b1120; border-radius:8px; padding:12px; font-size:13px; line-height:1.7; color:#94a3b8; margin-top:10px; }
+.interpret strong { color:#e2e8f0; }
+.teach-box { background:linear-gradient(135deg,#0f172a,#1a2332); border:1px solid #1e293b; border-radius:10px; padding:14px; margin-bottom:12px; }
+.teach-box .title { font-size:13px; font-weight:600; color:#3b82f6; margin-bottom:6px; }
+.teach-box .body { font-size:12px; line-height:1.7; color:#94a3b8; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>📊 杜邦分析 · 分步教学版</h1>
+<div class="sub">拆解ROE——看一家公司到底靠什么赚钱</div>
+<div class="steps" id="stepBar">
+  <button class="step-btn active" onclick="goStep(1)" id="s1">① ROE是什么</button>
+  <button class="step-btn" onclick="goStep(2)" id="s2">② 利润率</button>
+  <button class="step-btn" onclick="goStep(3)" id="s3">③ 周转率</button>
+  <button class="step-btn" onclick="goStep(4)" id="s4">④ 杠杆</button>
+  <button class="step-btn" onclick="goStep(5)" id="s5">⑤ 综合分析</button>
+</div>
+<div class="two-col">
+<div class="input-panel">
+<h3>📥 财务数据（万元）</h3>
+<div class="grp"><label><span>营业收入</span><span id="v1" style="color:#3b82f6;">10000</span></label><input type="number" id="rev" value="10000" oninput="upd();calc();"></div>
+<div class="grp"><label><span>营业成本</span><span id="v2" style="color:#ef4444;">6500</span></label><input type="number" id="cogs" value="6500" oninput="upd();calc();"></div>
+<div class="grp"><label><span>期间费用</span><span id="v3" style="color:#ef4444;">2000</span></label><input type="number" id="exp" value="2000" oninput="upd();calc();"></div>
+<div class="grp"><label><span>所得税</span><span id="v4" style="color:#ef4444;">300</span></label><input type="number" id="tax" value="300" oninput="upd();calc();"></div>
+<div class="grp"><label><span>→ 净利润</span><span id="v5" style="color:#10b981;font-weight:700;">1200</span></label></div>
+<div class="grp"><label><span>资产总额</span><span id="v6" style="color:#3b82f6;">25000</span></label><input type="number" id="assets" value="25000" oninput="upd();calc();"></div>
+<div class="grp"><label><span>所有者权益</span><span id="v7" style="color:#3b82f6;">15000</span></label><input type="number" id="equity" value="15000" oninput="upd();calc();"></div>
+<div style="font-size:11px;color:#475569;margin-top:4px;">净利润 = 营收 - 成本 - 费用 - 所得税</div>
+<div class="samples">
+<button onclick="loadSample('mfg')">🏭 制造业</button>
+<button onclick="loadSample('retail')">🛒 零售业</button>
+<button onclick="loadSample('tech')">💻 科技公司</button>
+<button onclick="loadSample('realestate')">🏗️ 房地产</button>
+</div>
+</div>
+<div class="result-panel" id="resultPanel">
+<div class="teach-box" id="teachBox">
+<div class="title" id="teachTitle">ROE（净资产收益率）是什么？</div>
+<div class="body" id="teachBody">假设你开了一家店，自己投了 <strong>100万</strong>，一年净赚 <strong>15万</strong>。<br>你的 ROE = 15/100 = <strong style="color:#10b981;">15%</strong>。<br><br>也就是说：每投入 <strong>1元</strong> 自有资金，一年赚回 <strong>0.15元</strong>。<br>ROE 是衡量一家公司 <strong>股东回报水平</strong> 的核心指标。</div>
+</div>
+<div class="formula-bar">
+<div class="formula-item"><div class="num" id="fROE">0.00%</div><div class="lbl">ROE</div></div>
+<div class="formula-item op">=</div>
+<div class="formula-item"><div class="num" id="fNPM">0.00%</div><div class="lbl">净利率</div></div>
+<div class="formula-item op">×</div>
+<div class="formula-item"><div class="num" id="fAT">0.00</div><div class="lbl">周转率</div></div>
+<div class="formula-item op">×</div>
+<div class="formula-item"><div class="num" id="fEM">0.00</div><div class="lbl">权益乘数</div></div>
+</div>
+<div class="interpret" id="interpBox">修改左侧数据或点击案例按钮开始分析</div>
+</div>
+</div>
+</div>
+<script>
+function g(id){return parseFloat(document.getElementById(id).value)||0;}
+function pct(v){return(v*100).toFixed(2)+'%';}
+function fmt(n){return n.toLocaleString();}
+function getData(){const rev=g('rev'),cogs=g('cogs'),exp=g('exp'),tax=g('tax'),assets=g('assets'),equity=g('equity');const np=rev-cogs-exp-tax;const npm=rev>0?np/rev:0;const at=assets>0?rev/assets:0;const em=equity>0?assets/equity:0;return{rev,cogs,exp,tax,assets,equity,np,npm,at,em,roe:npm*at*em};}
+function upd(){const d=getData();document.getElementById('v1').textContent=fmt(d.rev);document.getElementById('v2').textContent=fmt(d.cogs);document.getElementById('v3').textContent=fmt(d.exp);document.getElementById('v4').textContent=fmt(d.tax);document.getElementById('v5').textContent=fmt(d.np);document.getElementById('v6').textContent=fmt(d.assets);document.getElementById('v7').textContent=fmt(d.equity);}
+let currentStep=1;
+function goStep(n){currentStep=n;for(let i=1;i<=5;i++){const el=document.getElementById('s'+i);el.classList.remove('active','done');if(i===n)el.classList.add('active');else if(i<n)el.classList.add('done');}updateTeach(n);calc();}
+function updateTeach(n){const t=document.getElementById('teachTitle');const b=document.getElementById('teachBody');const d=getData();switch(n){case 1:t.textContent='ROE（净资产收益率）是什么？';b.innerHTML='ROE全称 Return on Equity（净资产收益率）。<br><br><strong>公式：</strong>ROE = 净利润 ÷ 所有者权益<br><br>当前数据：净利润 <strong style="color:#10b981;">'+fmt(d.np)+'万元</strong>，所有者权益 <strong>'+fmt(d.equity)+'万元</strong><br>→ ROE = '+fmt(d.np)+' ÷ '+fmt(d.equity)+' = <strong style="color:#10b981;">'+pct(d.roe)+'</strong><br><br>含义：股东每投入 <strong>1元</strong>，公司赚回了 <strong style="color:#10b981;">'+(d.roe*100).toFixed(1)+'分</strong>。<br><span style="color:#64748b;">A股优秀公司的ROE通常在15%以上。</span>';break;case 2:t.textContent='① 销售净利率——卖东西赚不赚钱？';const nc=d.npm>0.1?'#10b981':d.npm>0.03?'#f59e0b':'#ef4444';b.innerHTML='<strong>净利率</strong> = 净利润 ÷ 营业收入<br><br>当前：净利润 '+fmt(d.np)+'万元 ÷ 营收 '+fmt(d.rev)+'万元 = <strong style="color:'+nc+';">'+pct(d.npm)+'</strong><br><br><strong>意思是：</strong>每卖出 <strong>100元</strong> 的东西，最后装进口袋的净利润有 <strong>'+(d.npm*100).toFixed(1)+'元</strong>。<br><br>'+(d.npm<0.03?'<span style="color:#f59e0b;">⚠️ 净利率偏低（<3%），说明要么成本高、要么费用重——这是薄利多销的生意。</span>':d.npm<0.1?'<span style="color:#94a3b8;">净利率中等，有一定利润空间。</span>':'<span style="color:#10b981;">✅ 净利率超过10%，利润空间不错。</span>')+'<br><br><span style="color:#64748b;">💡 调左边的"营业成本"和"期间费用"，看看净利率怎么变。</span>';break;case 3:t.textContent='② 资产周转率——资产用得快不快？';const ac=d.at>1?'#10b981':d.at>0.5?'#f59e0b':'#ef4444';b.innerHTML='<strong>资产周转率</strong> = 营业收入 ÷ 资产总额<br><br>当前：营收 '+fmt(d.rev)+'万元 ÷ 总资产 '+fmt(d.assets)+'万元 = <strong style="color:'+ac+';">'+d.at.toFixed(2)+'</strong><br><br><strong>意思是：</strong>每 <strong>1元</strong> 资产，一年能产生 <strong>'+d.at.toFixed(2)+'元</strong> 的营业收入。<br><br>'+(d.at<0.5?'<span style="color:#f59e0b;">⚠️ 周转率偏低，资产运营效率不高——可能是有大量闲置资产。</span>':d.at<1?'<span style="color:#94a3b8;">周转率中等。</span>':'<span style="color:#10b981;">✅ 周转率超过1，资产用得不错。</span>')+'<br><br><span style="color:#64748b;">💡 零售业周转率通常很高（快进快出），重工业则低。行业不同，不能直接比。</span>';break;case 4:t.textContent='③ 权益乘数——用了多少杠杆（借钱）？';const ec=d.em>3?'#ef4444':d.em>1.5?'#f59e0b':'#10b981';b.innerHTML='<strong>权益乘数</strong> = 资产总额 ÷ 所有者权益<br><br>当前：总资产 '+fmt(d.assets)+'万元 ÷ 权益 '+fmt(d.equity)+'万元 = <strong style="color:'+ec+';">'+d.em.toFixed(2)+'</strong><br><br><strong>意思是：</strong>每 <strong>1元</strong> 自有资金，撬动了 <strong>'+d.em.toFixed(2)+'元</strong> 的总资产。<br><br>'+(d.em>3?'<span style="color:#ef4444;">⚠️ 乘数超过3，杠杆偏高。借钱经营放大了收益，但也放大了风险。</span>':d.em>1.5?'<span style="color:#f59e0b;">杠杆适中，行业内常见水平。</span>':'<span style="color:#10b981;">✅ 杠杆低，财务保守，但可能没有充分利用融资能力。</span>')+'<br><br><span style="color:#64748b;">💡 权益乘数=2 意味着有一半资产是借来的钱买的。</span>';break;case 5:t.textContent='④ 综合分析——三因素一起看';let adv='';if(d.roe>0.2)adv+='<li>✅ ROE优秀（>20%），资本回报水平高。</li>';else if(d.roe>0.1)adv+='<li>ROE中等（10-20%），尚可。</li>';else adv+='<li>⚠️ ROE偏低（<10%），需要改善。</li>';if(d.npm>0.1)adv+='<li>净利率较高 → 产品有定价权或成本控制好。</li>';else if(d.npm<0.03)adv+='<li>净利率很薄 → 属于薄利多销型或成本偏高。</li>';if(d.at>1.5)adv+='<li>资产周转快 → 运营效率高，资产不闲置。</li>';else if(d.at<0.3)adv+='<li>资产周转慢 → 可能有大量固定资产或存货积压。</li>';if(d.em>3)adv+='<li>杠杆高 → 依赖债务扩张，关注偿债能力。</li>';else if(d.em<1.5)adv+='<li>杠杆低 → 财务稳健，但可能扩张保守。</li>';b.innerHTML='<strong>ROE = '+pct(d.npm)+' × '+d.at.toFixed(2)+' × '+d.em.toFixed(2)+' = '+pct(d.roe)+'</strong><br><br><strong>解读：</strong><br><ul style="padding-left:16px;margin:6px 0;line-height:2;">'+adv+'</ul>三种赚钱模式：<br>· <strong>高利润型</strong>：高净利率 + 低周转（如茅台）<br>· <strong>高效型</strong>：低净利率 + 高周转（如沃尔玛）<br>· <strong>高杠杆型</strong>：低净利率 + 中等周转 + 高杠杆（如房地产）<br><br><span style="color:#64748b;">💡 调左侧数据，看看企业"换一种活法"会变成什么样子。</span>';}}
+function calc(){const d=getData();document.getElementById('fROE').textContent=pct(d.roe);document.getElementById('fNPM').textContent=pct(d.npm);document.getElementById('fAT').textContent=d.at.toFixed(2);document.getElementById('fEM').textContent=d.em.toFixed(2);const re=document.getElementById('fROE');re.style.color=d.roe>0.2?'#10b981':d.roe>0.1?'#f59e0b':'#ef4444';updateTeach(currentStep);}
+function loadSample(s){const sa={mfg:{rev:12000,cogs:7200,exp:2800,tax:500,assets:20000,equity:12000},retail:{rev:50000,cogs:38000,exp:8500,tax:1200,assets:15000,equity:8000},tech:{rev:8000,cogs:2500,exp:3500,tax:400,assets:12000,equity:10000},realestate:{rev:30000,cogs:20000,exp:7000,tax:1000,assets:80000,equity:16000}};const d=sa[s];document.getElementById('rev').value=d.rev;document.getElementById('cogs').value=d.cogs;document.getElementById('exp').value=d.exp;document.getElementById('tax').value=d.tax;document.getElementById('assets').value=d.assets;document.getElementById('equity').value=d.equity;upd();calc();}
+upd();calc();
+</script>
+</body>
+</html>
