@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>杜邦分析沙盘 - DuPont Analysis Sandbox</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#0b1120; color:#e2e8f0; padding:16px; }
+.container { max-width:1300px; margin:0 auto; }
+header { margin-bottom:14px; }
+header h1 { font-size:22px; font-weight:700; display:flex; align-items:center; gap:8px; }
+header h1 small { font-size:11px; font-weight:400; background:#1e293b; padding:2px 10px; border-radius:8px; color:#64748b; }
+header p { color:#64748b; font-size:13px; margin-top:2px; }
+.grid { display:grid; grid-template-columns:320px 1fr; gap:14px; }
+@media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+.panel { background:#0f172a; border-radius:12px; border:1px solid #1e293b; padding:16px; }
+.panel-title { font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
+.form-group { margin-bottom:10px; }
+.form-group label { display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin-bottom:2px; }
+.form-group input { width:100%; padding:7px 10px; background:#0b1120; border:1px solid #1e293b; border-radius:6px; color:#e2e8f0; font-size:13px; }
+.form-group input:focus { border-color:#3b82f6; outline:none; }
+.hint { font-size:10px; color:#475569; margin-top:2px; }
+.btn-group { display:flex; gap:6px; margin-top:12px; }
+.btn { padding:7px 16px; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+.btn-primary { background:#3b82f6; color:#fff; }
+.btn-primary:hover { background:#2563eb; }
+.btn-secondary { background:#1e293b; color:#94a3b8; }
+.btn-secondary:hover { background:#334155; }
+.canvas-wrap { width:100%; position:relative; }
+.canvas-wrap canvas { display:block; width:100%; aspect-ratio:16/9; }
+.explain-box { background:#0b1120; border-radius:8px; padding:12px; margin-top:12px; font-size:12px; line-height:1.7; color:#94a3b8; }
+.explain-box .highlight { color:#e2e8f0; font-weight:600; }
+.footer { text-align:center; margin-top:14px; font-size:11px; color:#334155; }
+.tag { display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; margin-left:4px; }
+.tag.green { background:rgba(16,185,129,.15); color:#10b981; }
+.tag.yellow { background:rgba(245,158,11,.15); color:#f59e0b; }
+.tag.red { background:rgba(239,68,68,.15); color:#ef4444; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>📊 杜邦分析沙盘 <small>DuPont Analysis Interactive</small></h1>
+<p>输入财务数据，自动生成三因素杜邦分析树——理解 ROE 是如何构成的</p>
+</header>
+<div class="grid">
+<div class="panel">
+<div class="panel-title">📥 财务数据输入 <span style="color:#475569;font-weight:400;">（单位：万元）</span></div>
+<div class="form-group">
+<label><span>营业收入</span><span id="revDisplay" style="color:#3b82f6;">10000</span></label>
+<input type="number" id="revenue" value="10000" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="form-group">
+<label><span>营业成本</span><span id="cogsDisplay" style="color:#ef4444;">6000</span></label>
+<input type="number" id="cogs" value="6000" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="form-group">
+<label><span>期间费用（销售+管理+财务）</span><span id="expDisplay" style="color:#ef4444;">2000</span></label>
+<input type="number" id="expense" value="2000" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="form-group">
+<label><span>所得税费用</span><span id="taxDisplay" style="color:#ef4444;">400</span></label>
+<input type="number" id="tax" value="400" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="form-group" style="border-top:1px solid #1e293b;padding-top:10px;">
+<label><span style="font-weight:600;">→ 净利润</span><span id="npDisplay" style="color:#10b981;font-weight:700;">1600</span></label>
+<div class="hint">= 营收 - 营业成本 - 期间费用 - 所得税</div>
+</div>
+<div class="form-group">
+<label><span>资产总额</span><span id="assetDisplay" style="color:#3b82f6;">20000</span></label>
+<input type="number" id="assets" value="20000" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="form-group">
+<label><span>所有者权益</span><span id="eqDisplay" style="color:#3b82f6;">12000</span></label>
+<input type="number" id="equity" value="12000" oninput="updateDisplay();calcDupont();">
+</div>
+<div class="btn-group">
+<button class="btn btn-secondary" onclick="loadSample1()">🏭 制造业案例</button>
+<button class="btn btn-secondary" onclick="loadSample2()">🛒 零售业案例</button>
+<button class="btn btn-primary" onclick="loadSample3()">🚀 高杠杆案例</button>
+</div>
+</div>
+<div class="panel" style="padding:10px;">
+<div class="panel-title">🌳 杜邦分析树</div>
+<div class="canvas-wrap"><canvas id="treeCanvas"></canvas></div>
+<div id="explainBox" class="explain-box">输入左侧数据后开始分析</div>
+</div>
+</div>
+<div class="footer">杜邦分析沙盘 · 基于三因素模型：ROE = 销售净利率 × 资产周转率 × 权益乘数</div>
+</div>
+<script>
+const canvas = document.getElementById("treeCanvas");
+const ctx = canvas.getContext("2d");
+let hovered = null;
+
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  const w = r.width - 2;
+  canvas.width = w * (window.devicePixelRatio||1);
+  canvas.height = w * 0.56 * (window.devicePixelRatio||1);
+  canvas.style.width = w + "px";
+  canvas.style.height = (w * 0.56) + "px";
+}
+
+function g(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function getData() {
+  const rev = g("revenue");
+  const cogs = g("cogs");
+  const exp = g("expense");
+  const tax = g("tax");
+  const assets = g("assets");
+  const equity = g("equity");
+  const np = rev - cogs - exp - tax;
+  const npm = rev > 0 ? np / rev : 0;
+  const at = assets > 0 ? rev / assets : 0;
+  const em = equity > 0 ? assets / equity : 0;
+  const roe = npm * at * em;
+  return { rev, cogs, exp, tax, assets, equity, np, npm, at, em, roe };
+}
+
+function updateDisplay() {
+  const d = getData();
+  document.getElementById("revDisplay").textContent = d.rev.toLocaleString();
+  document.getElementById("cogsDisplay").textContent = d.cogs.toLocaleString();
+  document.getElementById("expDisplay").textContent = d.exp.toLocaleString();
+  document.getElementById("taxDisplay").textContent = d.tax.toLocaleString();
+  document.getElementById("npDisplay").textContent = d.np.toLocaleString();
+  document.getElementById("assetDisplay").textContent = d.assets.toLocaleString();
+  document.getElementById("eqDisplay").textContent = d.equity.toLocaleString();
+}
+
+function pct(v) { return (v * 100).toFixed(2) + "%"; }
+
+function pct1(v) { return (v * 100).toFixed(1) + "%"; }
+
+function getColor(value, type) {
+  if (type === "npm") return value > 0.1 ? "green" : value > 0.03 ? "yellow" : "red";
+  if (type === "at") return value > 1.0 ? "green" : value > 0.5 ? "yellow" : "red";
+  if (type === "em") return value > 3 ? "red" : value > 1.5 ? "yellow" : "green";
+  if (type === "roe") return value > 0.15 ? "green" : value > 0.05 ? "yellow" : "red";
+  if (type === "np") return value > 0 ? "green" : "red";
+  return "yellow";
+}
+
+function drawTree() {
+  const d = getData();
+  const w = canvas.width, h = canvas.height, dp = window.devicePixelRatio || 1;
+  ctx.clearRect(0,0,w,h);
+  
+  // Layout
+  const cx = w / 2;
+  const levels = [
+    { y: h * 0.12, nodes: [{ id:"ROE", label:"ROE 净资产收益率", val: pct1(d.roe), raw: d.roe, type:"roe" }] },
+    { y: h * 0.38, nodes: [
+      { id:"NPM", label:"销售净利率", val: pct1(d.npm), raw: d.npm, type:"npm" },
+      { id:"AT", label:"资产周转率", val: (d.at).toFixed(2), raw: d.at, type:"at" },
+      { id:"EM", label:"权益乘数", val: (d.em).toFixed(2), raw: d.em, type:"em" }
+    ]},
+    { y: h * 0.64, nodes: [
+      { id:"NP", label:"净利润", val: d.np.toLocaleString()+"万元", raw: d.np, type:"np", isLeaf:true },
+      { id:"REV", label:"营业收入", val: d.rev.toLocaleString()+"万元", raw: d.rev, isLeaf:true },
+      { id:"TA", label:"资产总额", val: d.assets.toLocaleString()+"万元", raw: d.assets, isLeaf:true },
+      { id:"EQ", label:"所有者权益", val: d.equity.toLocaleString()+"万元", raw: d.equity, isLeaf:true }
+    ]}
+  ];
+  
+  // Position nodes
+  const l0 = levels[0].nodes[0];
+  l0.x = cx; l0.y = levels[0].y;
+  
+  const l1w = w * 0.55;
+  levels[1].nodes.forEach((n,i) => {
+    n.x = cx - l1w/2 + l1w * i / 2;
+    n.y = levels[1].y;
+  });
+  
+  const l2w = w * 0.7;
+  const leafLabels = ["NP","REV","TA","EQ"];
+  leafLabels.forEach((id,i) => {
+    const n = levels[2].nodes.find(x => x.id === id);
+    if (n) { n.x = cx - l2w/2 + l2w * i / 3; n.y = levels[2].y; }
+  });
+  
+  // Draw connections
+  ctx.lineWidth = 1.5 * dp;
+  
+  function connect(x1,y1,x2,y2,col) {
+    ctx.beginPath(); ctx.moveTo(x1,y1);
+    const midY = (y1 + y2) / 2;
+    ctx.quadraticCurveTo(x1,midY,x2,midY); ctx.lineTo(x2,y2);
+    ctx.strokeStyle = col || "rgba(148,163,184,0.25)";
+    ctx.stroke();
+  }
+  
+  // ROE → children
+  levels[1].nodes.forEach(n => {
+    connect(l0.x, l0.y + 16*dp, n.x, n.y - 16*dp);
+  });
+  
+  // NPM → NP, REV
+  const npmNode = levels[1].nodes[0];
+  const npNode = levels[2].nodes.find(x => x.id === "NP");
+  const revNode = levels[2].nodes.find(x => x.id === "REV");
+  if(npmNode && npNode) connect(npmNode.x, npmNode.y + 16*dp, npNode.x, npNode.y - 16*dp);
+  if(npmNode && revNode) connect(npmNode.x, npmNode.y + 16*dp, revNode.x, revNode.y - 16*dp, "rgba(148,163,184,0.15)");
+  
+  // AT → REV, TA
+  const atNode = levels[1].nodes[1];
+  const taNode = levels[2].nodes.find(x => x.id === "TA");
+  if(atNode && revNode) connect(atNode.x, atNode.y + 16*dp, revNode.x, revNode.y - 16*dp, "rgba(148,163,184,0.15)");
+  if(atNode && taNode) connect(atNode.x, atNode.y + 16*dp, taNode.x, taNode.y - 16*dp);
+  
+  // EM → TA, EQ
+  const emNode = levels[1].nodes[2];
+  const eqNode = levels[2].nodes.find(x => x.id === "EQ");
+  if(emNode && taNode) connect(emNode.x, emNode.y + 16*dp, taNode.x, taNode.y - 16*dp, "rgba(148,163,184,0.15)");
+  if(emNode && eqNode) connect(emNode.x, emNode.y + 16*dp, eqNode.x, eqNode.y - 16*dp);
+  
+  // Draw formula labels on connections (small text)
+  ctx.fillStyle = "rgba(148,163,184,0.35)";
+  ctx.font = `${8*dp}px sans-serif`;
+  ctx.textAlign = "center";
+  const formulas = [
+    { x: (l0.x + npmNode.x)/2, y: (l0.y + npmNode.y)/2, txt: "×" },
+    { x: (l0.x + atNode.x)/2, y: (l0.y + atNode.y)/2, txt: "×" },
+    { x: (l0.x + emNode.x)/2, y: (l0.y + emNode.y)/2, txt: "×" },
+    { x: (npmNode.x + npNode.x)/2, y: (npmNode.y + npNode.y)/2, txt: "÷" },
+    { x: (atNode.x + revNode.x)/2, y: (atNode.y + revNode.y)/2, txt: "÷" },
+    { x: (emNode.x + taNode.x)/2, y: (emNode.y + taNode.y)/2, txt: "÷" },
+  ];
+  formulas.forEach(f => ctx.fillText(f.txt, f.x, f.y));
+  
+  // Draw nodes
+  function drawNode(n, color) {
+    const r = n.isLeaf ? 14*dp : 18*dp;
+    const nodeColor = {
+      "green": "rgba(16,185,129,0.15)", "yellow": "rgba(245,158,11,0.15)", "red": "rgba(239,68,68,0.15)"
+    };
+    ctx.beginPath(); ctx.roundRect(n.x-r, n.y-r-6*dp, r*2, r*2+12*dp, 8*dp);
+    ctx.fillStyle = nodeColor[color] || "rgba(59,130,246,0.12)";
+    ctx.fill();
+    ctx.strokeStyle = {
+      "green": "#10b981", "yellow": "#f59e0b", "red": "#ef4444"
+    }[color] || "#3b82f6";
+    ctx.lineWidth = 1.5*dp;
+    ctx.stroke();
+    
+    // Label
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = `${n.isLeaf ? 8 : 9}${dp}px sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(n.label, n.x, n.y - r - 4*dp);
+    
+    // Value
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${n.isLeaf ? 10 : 11}${dp}px sans-serif`;
+    ctx.textBaseline = "top";
+    ctx.fillText(n.val, n.x, n.y - r + 8*dp);
+  }
+  
+  // Color for each node
+  const colors = {
+    "ROE": getColor(d.roe, "roe"),
+    "NPM": getColor(d.npm, "npm"),
+    "AT": getColor(d.at, "at"),
+    "EM": getColor(d.em, "em"),
+    "NP": d.np > 0 ? "green" : "red",
+    "REV": "green",
+    "TA": "green",
+    "EQ": "green"
+  };
+  
+  [levels[0], levels[1], levels[2]].forEach(lvl => {
+    lvl.nodes.forEach(n => drawNode(n, colors[n.id]));
+  });
+  
+  // Update explanation
+  let txt = `<b style="color:#e2e8f0;">ROE = ${pct1(d.roe)}</b> = ${pct1(d.npm)}（净利率）× ${d.at.toFixed(2)}（周转率）× ${d.em.toFixed(2)}（杠杆）<br><br>`;
+  txt += `这表示每 <span class="highlight">1元</span> 股东投入，创造了 <span class="highlight">${(d.roe*100).toFixed(1)}分</span> 净利润。<br>`;
+  txt += d.em > 3 ? `<span style="color:#f59e0b;">⚠️ 权益乘数 ${d.em.toFixed(2)}，杠杆较高，注意偿债风险。</span><br>` : "";
+  txt += d.npm < 0.03 ? `<span style="color:#f59e0b;">⚠️ 净利率 ${pct1(d.npm)}，利润空间薄，需关注成本控制。</span><br>` : "";
+  txt += d.at < 0.5 ? `<span style="color:#f59e0b;">⚠️ 资产周转率 ${d.at.toFixed(2)}，资产运营效率偏低。</span><br>` : "";
+  txt += d.roe > 0.2 ? `<span style="color:#10b981;">✅ ROE超过20%，资本回报水平优秀。</span>` : "";
+  document.getElementById("explainBox").innerHTML = txt;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  resize(); updateDisplay(); calcDupont();
+});
+window.addEventListener("resize", () => { resize(); calcDupont(); });
+
+function calcDupont() { drawTree(); }
+
+function loadSample1() {
+  document.getElementById("revenue").value = 12000;
+  document.getElementById("cogs").value = 7500;
+  document.getElementById("expense").value = 2500;
+  document.getElementById("tax").value = 500;
+  document.getElementById("assets").value = 18000;
+  document.getElementById("equity").value = 10000;
+  updateDisplay(); calcDupont();
+}
+
+function loadSample2() {
+  document.getElementById("revenue").value = 30000;
+  document.getElementById("cogs").value = 21000;
+  document.getElementById("expense").value = 6500;
+  document.getElementById("tax").value = 800;
+  document.getElementById("assets").value = 12000;
+  document.getElementById("equity").value = 6000;
+  updateDisplay(); calcDupont();
+}
+
+function loadSample3() {
+  document.getElementById("revenue").value = 8000;
+  document.getElementById("cogs").value = 5000;
+  document.getElementById("expense").value = 1500;
+  document.getElementById("tax").value = 300;
+  document.getElementById("assets").value = 25000;
+  document.getElementById("equity").value = 5000;
+  updateDisplay(); calcDupont();
+}
+</script>
+</body>
+</html>

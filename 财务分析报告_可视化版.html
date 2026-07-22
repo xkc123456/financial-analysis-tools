@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>自动化财务分析报告</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',-apple-system,Roboto,sans-serif; background:#f1f5f9; color:#1e293b; padding:20px; }
+.container { max-width:1200px; margin:0 auto; }
+.report-header { background:linear-gradient(135deg,#1e3a5f,#2563eb); color:#fff; border-radius:16px; padding:28px 32px; margin-bottom:20px; }
+.report-header h1 { font-size:26px; font-weight:700; margin-bottom:6px; }
+.report-header p { font-size:14px; opacity:0.8; }
+.report-header .meta { display:flex; gap:20px; margin-top:12px; font-size:12px; opacity:0.7; }
+.section-title { font-size:16px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.company-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; margin-bottom:20px; }
+.company-card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.company-name { font-size:15px; font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+.roe-badge { display:inline-flex; align-items:center; gap:4px; font-size:20px; font-weight:800; }
+.roe-badge.green { color:#10b981; }
+.roe-badge.yellow { color:#f59e0b; }
+.roe-badge.red { color:#ef4444; }
+.metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.metric-item { background:#f8fafc; border-radius:8px; padding:10px; }
+.metric-label { font-size:11px; color:#64748b; margin-bottom:2px; }
+.metric-value { font-size:18px; font-weight:700; color:#1e293b; }
+.metric-value .pct { font-size:13px; color:#64748b; font-weight:400; }
+.comment { font-size:12px; color:#64748b; margin-top:10px; padding:8px 10px; background:#f0fdf4; border-radius:6px; border-left:3px solid #10b981; }
+.comment.warn { background:#fffbeb; border-color:#f59e0b; }
+.comment.caution { background:#fef2f2; border-color:#ef4444; }
+.compare-table { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:20px; overflow-x:auto; }
+.compare-table table { width:100%; border-collapse:collapse; font-size:13px; }
+.compare-table th { background:#f8fafc; text-align:left; padding:10px 12px; font-weight:600; color:#475569; border-bottom:2px solid #e2e8f0; }
+.compare-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; }
+.compare-table tr:last-child td { border-bottom:none; }
+.compare-table .highlight { font-weight:600; }
+.bar-cell { display:flex; align-items:center; gap:6px; }
+.bar { height:8px; border-radius:4px; min-width:4px; transition:width .5s; }
+.bar.green { background:#10b981; }
+.bar.yellow { background:#f59e0b; }
+.bar.red { background:#ef4444; }
+.bar.blue { background:#3b82f6; }
+.dupont-section { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:20px; }
+.dupont-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:6px 8px; background:#f8fafc; border-radius:6px; font-size:13px; }
+.dupont-row .eq { color:#94a3b8; font-size:12px; }
+.dupont-row .val { font-weight:700; min-width:60px; text-align:right; }
+.formula-box { background:#f1f5f9; border-radius:8px; padding:12px; font-size:12px; color:#475569; line-height:1.6; margin-top:8px; }
+.footer { text-align:center; font-size:12px; color:#94a3b8; margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="report-header">
+<h1>📊 自动化财务分析报告</h1>
+<p>基于杜邦分析框架 · 三家公司横向对比 · 一键生成</p>
+<div class="meta">
+<span>📅 生成时间：<span id="genTime"></span></span>
+<span>📁 分析工具：Python 财务分析脚本</span>
+<span>🏢 数据来源：内置模拟数据</span>
+</div>
+</div>
+
+<div class="section-title">🏢 公司财务全景</div>
+<div class="company-grid" id="companyGrid"></div>
+
+<div class="section-title">📋 核心指标对比</div>
+<div class="compare-table" id="compareTable"></div>
+
+<div class="section-title">🔍 杜邦公式展开</div>
+<div class="dupont-section" id="dupontSection"></div>
+
+<div class="section-title">📝 自动化解读</div>
+<div class="compare-table" id="insightSection"></div>
+
+<div class="footer">自动化财务分析报告 · 基于 Python + HTML 生成</div>
+</div>
+
+<script>
+document.getElementById('genTime').textContent = new Date().toLocaleString('zh-CN');
+
+const data = {
+  "格力电器(制造)": {
+    revenue: 2036, cogs: 1470, sellExp: 125, adminExp: 56, finExp: -28, tax: 32,
+    assets: 3682, liab: 2090, equity: 1592,
+    desc: "高利润率+较低杠杆，典型的制造型企业盈利能力驱动ROE",
+    type: "green"
+  },
+  "永辉超市(零售)": {
+    revenue: 910, cogs: 730, sellExp: 140, adminExp: 22, finExp: 12, tax: 1.5,
+    assets: 520, liab: 388, equity: 132,
+    desc: "低利润率+高周转+高杠杆，零售业靠规模和周转吃饭",
+    type: "red"
+  },
+  "恒瑞医药(科技)": {
+    revenue: 232, cogs: 30, sellExp: 70, adminExp: 22, finExp: -3, tax: 10,
+    assets: 400, liab: 48, equity: 352,
+    desc: "极高利润率+极低杠杆，轻资产高科技企业特征",
+    type: "green"
+  }
+};
+
+function calc(d) {
+  const gp = d.revenue - d.cogs;
+  const op = gp - d.sellExp - d.adminExp;
+  const np = op - d.finExp - d.tax;
+  return {
+    roe: (np / d.equity * 100),
+    npm: (np / d.revenue * 100),
+    at: (d.revenue / d.assets),
+    em: (d.assets / d.equity),
+    gm: (gp / d.revenue * 100),
+    opm: (op / d.revenue * 100),
+    debt: (d.liab / d.assets * 100),
+    np, op
+  };
+}
+
+function roeClass(v) { return v >= 15 ? 'green' : v >= 5 ? 'yellow' : 'red'; }
+function pct(v) { return v.toFixed(1) + '%'; }
+function barColor(v) { return v >= 15 ? 'green' : v >= 5 ? 'yellow' : 'red'; }
+function barColorDebt(v) { return v < 50 ? 'green' : v < 70 ? 'yellow' : 'red'; }
+function barColorTurn(v) { return v >= 1 ? 'green' : v >= 0.5 ? 'yellow' : 'red'; }
+
+// Company cards
+const grid = document.getElementById('companyGrid');
+const results = {};
+Object.entries(data).forEach(([name, d]) => {
+  const r = calc(d);
+  results[name] = r;
+  grid.innerHTML += `
+    <div class="company-card">
+      <div class="company-name">
+        <span>${name}</span>
+        <span class="roe-badge ${roeClass(r.roe)}">
+          ${r.roe >= 15 ? '✅' : r.roe >= 5 ? '⚠️' : '❌'} ${r.roe.toFixed(1)}%
+        </span>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-item"><div class="metric-label">销售净利率</div><div class="metric-value">${r.npm.toFixed(1)}<span class="pct">%</span></div></div>
+        <div class="metric-item"><div class="metric-label">资产周转率</div><div class="metric-value">${r.at.toFixed(2)}<span class="pct"> 次</span></div></div>
+        <div class="metric-item"><div class="metric-label">权益乘数</div><div class="metric-value">${r.em.toFixed(2)}<span class="pct"> ×</span></div></div>
+        <div class="metric-item"><div class="metric-label">资产负债率</div><div class="metric-value">${r.debt.toFixed(1)}<span class="pct">%</span></div></div>
+        <div class="metric-item"><div class="metric-label">毛利率</div><div class="metric-value">${r.gm.toFixed(1)}<span class="pct">%</span></div></div>
+        <div class="metric-item"><div class="metric-label">净利(万元)</div><div class="metric-value">${r.np.toFixed(0)}</div></div>
+      </div>
+      <div class="comment ${d.type === 'red' ? 'warn' : ''}">${d.desc}</div>
+    </div>
+  `;
+});
+
+// Compare table
+const ct = document.getElementById('compareTable');
+const fields = [
+  { key:'roe', label:'ROE %', fmt:v=>v.toFixed(1), cls:v=>barColor(v) },
+  { key:'npm', label:'净利率 %', fmt:v=>v.toFixed(1), cls:v=>barColor(v) },
+  { key:'gm', label:'毛利率 %', fmt:v=>v.toFixed(1), cls:v=>barColor(v) },
+  { key:'opm', label:'营业利润率 %', fmt:v=>v.toFixed(1), cls:v=>barColor(v) },
+  { key:'at', label:'资产周转率', fmt:v=>v.toFixed(3), cls:v=>barColorTurn(v) },
+  { key:'em', label:'权益乘数', fmt:v=>v.toFixed(2), cls:v=>v<2?'green':v<4?'yellow':'red' },
+  { key:'debt', label:'资产负债率 %', fmt:v=>v.toFixed(1), cls:v=>barColorDebt(v) },
+];
+let html = '<table><thead><tr><th>指标</th>';
+Object.keys(data).forEach(n => { html += `<th>${n}</th>`; });
+html += '</tr></thead><tbody>';
+fields.forEach(f => {
+  html += `<tr><td style="font-weight:600;">${f.label}</td>`;
+  Object.entries(results).forEach(([name, r]) => {
+    const v = r[f.key];
+    const cls = f.cls(v);
+    const display = f.fmt(v);
+    const pct = f.key === 'at' ? Math.min(100, v/2*100) : Math.min(100, v/50*100);
+    html += `<td><div class="bar-cell"><div class="bar ${cls}" style="width:${Math.max(8,pct)}px;"></div><span>${display}</span></div></td>`;
+  });
+  html += '</tr>';
+});
+html += '</tbody></table>';
+ct.innerHTML = html;
+
+// DuPont breakdown
+const ds = document.getElementById('dupontSection');
+let dupontHtml = '';
+Object.entries(results).forEach(([name, r]) => {
+  const check = Math.abs(r.roe - (r.npm/100 * r.at * r.em * 100)) < 0.05;
+  dupontHtml += `
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px;">${name}</div>
+      <div class="dupont-row"><span>ROE</span><span class="eq">=</span><span class="val" style="color:${r.roe>=15?'#10b981':'#f59e0b'};">${r.roe.toFixed(1)}%</span></div>
+      <div class="dupont-row" style="padding-left:24px;">
+        <span>净利率</span><span class="eq">×</span><span class="val">${r.npm.toFixed(1)}%</span>
+        <span class="eq">×</span><span>周转率</span><span class="eq">×</span><span class="val">${r.at.toFixed(3)}</span>
+        <span class="eq">×</span><span>杠杆</span><span class="eq">×</span><span class="val">${r.em.toFixed(2)}</span>
+      </div>
+      <div class="formula-box">
+        <span style="font-weight:600;">验算：</span> ${r.npm.toFixed(1)}% × ${r.at.toFixed(3)} × ${r.em.toFixed(2)} 
+        = ${(r.npm/100 * r.at * r.em * 100).toFixed(1)}% 
+        <span style="color:${check?'#10b981':'#ef4444'};">${check ? '✅ 一致' : '❌ 有偏差'}</span>
+      </div>
+    </div>`;
+});
+ds.innerHTML = dupontHtml;
+
+// Insights
+const is = document.getElementById('insightSection');
+let insightHtml = '<table><thead><tr><th>公司</th><th>驱动类型</th><th>核心特征</th><th>风险提示</th></tr></thead><tbody>';
+Object.entries(results).forEach(([name, r]) => {
+  let driver = '';
+  if (r.npm > 15) driver = '📈 高利润率驱动';
+  else if (r.at > 1 && r.npm < 5) driver = '🔄 高周转驱动';
+  else if (r.em > 3) driver = '🏗️ 高杠杆驱动';
+  else driver = '⚖️ 均衡驱动';
+
+  let risk = '';
+  if (r.debt > 70) risk = '⚠️ 负债率偏高，偿债风险较大';
+  else if (r.debt > 50) risk = 'ℹ️ 杠杆适中，财务结构稳健';
+  else risk = '✅ 财务结构保守，风险较低';
+
+  insightHtml += `<tr><td style="font-weight:600;">${name}</td><td>${driver}</td><td style="font-size:12px;">${data[name].desc}</td><td style="font-size:12px;">${risk}</td></tr>`;
+});
+insightHtml += '</tbody></table>';
+is.innerHTML = insightHtml;
+</script>
+</body>
+</html>

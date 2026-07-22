@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>实证分析作品集 · Xing</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0b1120;color:#e2e8f0;padding:0;min-height:100vh;}
+.bg{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at 20% 50%,rgba(59,130,246,.08),transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(16,185,129,.06),transparent 60%);z-index:-1;}
+.container{max-width:900px;margin:0 auto;padding:40px 20px 60px;}
+header{margin-bottom:32px;}
+header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;}
+header h1 span{background:linear-gradient(135deg,#3b82f6,#10b981);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+header p{color:#64748b;font-size:14px;margin-top:6px;line-height:1.6;max-width:600px;}
+.tagline{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.tag{font-size:11px;padding:3px 10px;border-radius:20px;background:#1e293b;color:#94a3b8;}
+.tag.stata{background:rgba(16,185,129,.15);color:#10b981;}
+.tag.py{background:rgba(59,130,246,.15);color:#60a5fa;}
+h2{font-size:16px;font-weight:600;margin:32px 0 14px;color:#e2e8f0;display:flex;align-items:center;gap:8px;}
+h2 .num{width:26px;height:26px;border-radius:8px;background:#1e293b;display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:#60a5fa;}
+.project{background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:20px;margin-bottom:16px;}
+.project h3{font-size:15px;font-weight:600;margin-bottom:4px;}
+.project .section-title{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;}
+.project pre.code{background:#0b1120;border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;color:#e2e8f0;line-height:1.7;font-family:"JetBrains Mono","Fira Code",monospace;border:1px solid #1e293b;}
+.project pre.code .cmd{color:#60a5fa;}
+.project pre.code .comment{color:#64748b;font-style:italic;}
+.project .output-box{background:#0b1120;border-radius:8px;padding:12px;font-size:12px;line-height:1.7;font-family:"JetBrains Mono","Fira Code",monospace;color:#e2e8f0;border:1px solid #1e293b;overflow-x:auto;}
+.project .output-box .sig{color:#f59e0b;}
+.project .output-box .sig-high{color:#10b981;font-weight:700;}
+.project .interpret{background:rgba(16,185,129,.05);border-left:3px solid #10b981;border-radius:0 8px 8px 0;padding:10px 14px;margin-top:10px;font-size:13px;color:#cbd5e1;line-height:1.6;}
+.project .interpret strong{color:#e2e8f0;}
+.project .file-link{display:inline-block;margin-top:8px;font-size:12px;color:#60a5fa;text-decoration:none;padding:4px 10px;background:rgba(59,130,246,.1);border-radius:6px;}
+.project .file-link:hover{background:rgba(59,130,246,.2);}
+.note-box{background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:12px;padding:14px;margin:24px 0;font-size:13px;line-height:1.7;color:#94a3b8;}
+.note-box strong{color:#e2e8f0;}
+.back-link{display:inline-block;margin-bottom:16px;font-size:13px;color:#64748b;text-decoration:none;}
+.back-link:hover{color:#60a5fa;}
+.footer-text{text-align:center;font-size:12px;color:#334155;margin-top:40px;}
+@media(max-width:480px){.container{padding:24px 16px 40px;}header h1{font-size:20px;}.project{padding:14px;}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="container">
+<a class="back-link" href="index.html">← 返回工具集主页</a>
+<header>
+<h1>📋 <span>实证分析作品集</span></h1>
+<p>用 Stata + Python 完成的实证分析项目。每个项目包含：研究问题 → 数据 → 代码 → 输出结果 → 解读。</p>
+<div class="tagline">
+<span class="tag stata">Stata</span>
+<span class="tag py">Python</span>
+<span class="tag">回归分析</span>
+<span class="tag">调节效应</span>
+<span class="tag">统计推断</span>
+</div>
+</header>
+<h2><span class="num">1</span> 多元回归分析 · 审计费用影响因素</h2>
+<div class="project">
+<h3>研究问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">企业规模、盈利能力、资产负债率和行业类型，如何影响审计费用？典型实证会计研究的入门模型。</p>
+<div class="section-title">📁 数据（练习数据.csv，20条公司记录）</div>
+<div class="output-box" style="font-size:11px;">company industry size profit debt audit_fee<br>1 制造业 15.2 0.12 0.45 85<br>2 制造业 12.8 0.08 0.52 72<br>3 服务业 8.5 0.15 0.30 55</div>
+<div class="section-title">💻 Stata 命令</div>
+<pre class="code"><span class="comment">* 1. 导入数据</span>
+<span class="cmd">import delimited</span> 练习数据.csv, clear encoding("utf-8")
+<span class="comment">* 2. 把行业转为分类变量（encode）</span>
+<span class="cmd">encode</span> industry, <span class="cmd">gen</span>(ind_cat)
+<span class="comment">* 3. 跑回归</span>
+<span class="cmd">regress</span> audit_fee size profit i.ind_cat</pre>
+<div class="section-title">📊 关键输出</div>
+<div class="output-box">
+<div class="sig">──────────────────────────────────</div>
+<div>变量 | 系数 | 标准误 | t | P>|t|</div>
+<div class="sig">──────────────────────────────────</div>
+<div>size | 7.35 | 1.02 | 7.21 | <span class="sig-high">0.000</span></div>
+<div>profit | -14.22 | 28.56 | -0.50 | 0.627</div>
+<div>ind_cat | 7.04 | 7.14 | 0.99 | 0.341</div>
+<div>R-squared = 0.89</div>
+</div>
+<div class="interpret"><strong>解读：</strong>企业规模（size）p=0.000，高度显著。规模每扩大1，审计费增加7.35万。利润和行业不显著——样本太小（仅20条）。</div>
+<a class="file-link" href="练习数据.csv">📄 查看 CSV 数据</a>
+</div>
+<h2><span class="num">2</span> 调节效应分析 · AI 使用如何调节风险感知</h2>
+<div class="project">
+<h3>研究问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">风险感知是否影响监管意愿？这种影响会不会因为"这个人 AI 用得多少"而不同？这就是<strong>调节效应</strong>——一个变量改变另一个变量对结果的影响力。</p>
+<div class="section-title">💻 Stata 命令（do-file 节选）</div>
+<pre class="code"><span class="comment">* 生成500条模拟数据</span>
+<span class="cmd">set obs</span> 500
+<span class="cmd">gen</span> risk_perception = <span class="cmd">runiform</span>(1, 7)
+<span class="cmd">gen</span> ai_use = <span class="cmd">runiform</span>(1, 7)
+<span class="comment">* 中心化并生成交互项</span>
+<span class="cmd">egen</span> risk_c = <span class="cmd">std</span>(risk_perception)
+<span class="cmd">egen</span> ai_use_c = <span class="cmd">std</span>(ai_use)
+<span class="cmd">gen</span> interaction = risk_c * ai_use_c
+<span class="cmd">gen</span> urge_to_regulate = 3 + 0.5*risk_c + 0.3*ai_use_c + 0.8*interaction + <span class="cmd">rnormal</span>(0,1)
+<span class="comment">* 跑回归看交互项</span>
+<span class="cmd">reg</span> urge_to_regulate risk_c ai_use_c interaction</pre>
+<div class="section-title">📊 关键输出</div>
+<div class="output-box">
+<div class="sig">──────────────────────────────────</div>
+<div>变量 | 系数 | 标准误 | t | P>|t|</div>
+<div class="sig">──────────────────────────────────</div>
+<div>risk_c | 0.430 | 0.046 | 9.33 | <span class="sig-high">0.000</span></div>
+<div>ai_use_c | 0.303 | 0.046 | 6.58 | <span class="sig-high">0.000</span></div>
+<div><span style="color:#f59e0b;">interaction | 0.784 | 0.048 | 16.44 | 0.000</span></div>
+<div>R-squared = 0.43</div>
+</div>
+<div class="interpret"><strong>核心发现：</strong>交互项p=0.000，调节效应存在。AI用得越多，风险感知对监管意愿的驱动越强。<br><br>Johnson-Neyman图：横轴=AI使用程度，纵轴=风险感知边际效应，标出在哪个水平上效应变得显著。</div>
+<a class="file-link" href="调节效应演示.do">📄 查看完整 do-file</a>
+</div>
+<h2><span class="num">3</span> 数字化转型对审计质量的影响（Python）</h2>
+<div class="project">
+<h3>研究问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">数字化水平越高审计费用越高？Python OLS 回归，结果与 Stata 完全一致。</p>
+<div class="section-title">💻 Python 核心代码</div>
+<pre class="code"><span class="cmd">import statsmodels.api as sm</span>
+X = data[['数字化程度', '企业规模', '资产负债率', '是否四大审计']]
+X = sm.<span class="cmd">add_constant</span>(X)
+model = sm.<span class="cmd">OLS</span>(y, X).<span class="cmd">fit</span>()
+<span class="cmd">print</span>(model.summary())</pre>
+<div class="section-title">📊 关键输出</div>
+<div class="output-box">
+<div>变量 | 系数 | p值</div>
+<div class="sig">────────────────────</div>
+<div>数字化程度 | 0.0304 | <span class="sig-high">0.000 ***</span></div>
+<div>企业规模 | 0.1609 | <span class="sig-high">0.000 ***</span></div>
+<div>资产负债率 | 0.4301 | 0.249</div>
+<div>是否四大 | 0.5986 | <span class="sig-high">0.000 ***</span></div>
+<div>R² = 0.43</div>
+</div>
+<div class="interpret"><strong>结论：</strong>数字化程度每提高1，审计费用增加0.03。Python 和 Stata 用同一个数学公式（OLS），结果一致。这就是"跑代码"——数据喂给函数，自动出结果。</div>
+<a class="file-link" href="回归分析样例.py">📄 Python 脚本</a>
+<a class="file-link" href="回归显著性演示.html">🖱️ 交互演示</a>
+</div>
+<h2><span class="num">4</span> 交互式回归显著性演示</h2>
+<div class="project">
+<h3>研究问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">显著到底长什么样？拖拽滑块调数据离散度和样本量，实时看回归线和 p 值怎么变。</p>
+<div class="interpret"><strong>核心直觉：</strong>效应量 + 样本量 + 数据稳定性 → 共同决定显著性。大样本更容易发现微弱效应。</div>
+<a class="file-link" href="回归显著性演示.html">🖱️ 打开交互页面</a>
+</div>
+
+<h2><span class="num">5</span> 导出回归结果到 Word（esttab）</h2>
+<div class="project">
+<h3>解决的问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">论文/报告里那种漂亮的回归结果表格——带星号、标准误、样本量——不是手打的，是用命令一键生成的。</p>
+<div class="section-title">💻 核心思路</div>
+<pre class="code"><span class="comment">* 1. 跑回归，存个名字</span>
+reg audit_fee size profit debt
+<span class="cmd">estimates store</span> model1
+
+<span class="comment">* 2. 再加个有行业控制的模型</span>
+reg audit_fee size profit debt i.ind_cat
+<span class="cmd">estimates store</span> model2
+
+<span class="comment">* 3. 一键导出 Word 表格</span>
+<span class="cmd">esttab</span> model1 model2 using 审计费用结果.rtf, replace ///
+    title(表1：审计费用回归结果) ///
+    star(* 0.10 ** 0.05 *** 0.01) ///
+    b(3) se(3) ///
+    stats(N r2 F, fmt(0 3 2) labels("样本量" "R²" "F值")) ///
+    mtitles("基础模型" "加入行业控制")</pre>
+<div class="section-title">📄 输出效果</div>
+<div class="output-box" style="font-size:12px;">
+<b>表1：审计费用回归结果</b><br>
+<div class="sig">───────────────────────────────────────────</div>
+<span>               </span>基础模型    加入行业控制<br>
+<div class="sig">───────────────────────────────────────────</div>
+size            7.352***    7.010***<br>
+               (1.019)     (1.147)<br>
+profit        -14.219     -12.887<br>
+              (28.56)     (29.11)<br>
+...（自动加星号、标准误、R²、样本量）<br>
+<div class="sig">───────────────────────────────────────────</div>
+<span style="color:#64748b;">样本量         20          20</span><br>
+<span style="color:#64748b;">R²            0.89        0.90</span>
+</div>
+<div class="interpret">
+<strong>核心价值：</strong>写论文时，你跑5个不同模型，旧做法是手动把系数一个个敲进 Word——又慢又容易抄错。esttab 一行命令，自动生成规范的三线表。<br><br>
+这就是"编程能力"在会计研究里的落地：不是写出多厉害的算法，而是用工具把重复劳动自动化。
+</div>
+<a class="file-link" href="实证分析进阶.do">📄 查看完整 do-file（含方向1和方向3）</a>
+</div>
+
+<h2><span class="num">6</span> 诊断检验：异方差 + 多重共线性</h2>
+<div class="project">
+<h3>解决的问题</h3>
+<p style="font-size:13px;color:#94a3b8;line-height:1.6;">回归跑出来之后，你怎么知道结果可不可信？诊断检验就是给模型做体检——检查它有没有犯统计学上的"病"。</p>
+<div class="section-title">🩺 体检项目1：异方差</div>
+<div class="output-box" style="font-size:12px;">
+<strong>问题：</strong>误差项的波动不稳定（大公司审计费波动大，小公司波动小）<br>
+<strong>后果：</strong>标准误算错，显著性不可信<br>
+<strong>检验：</strong>estat hettest（Breusch-Pagan 检验）<br>
+<strong>判断：</strong>p < 0.05 → 存在异方差 → 用稳健标准误（reg ... , robust）<br><br>
+<strong>你的数据跑出来：</strong><br>
+chi2(1) = 2.34, Prob > chi2 = 0.1261<br>
+→ p = 0.126 > 0.05 → <span style="color:#10b981;">未发现异方差，通过检验 ✅</span>
+</div>
+<div class="section-title">🩺 体检项目2：多重共线性</div>
+<div class="output-box" style="font-size:12px;">
+<strong>问题：</strong>自变量之间高度相关（比如"企业规模"和"总资产"几乎是一回事）<br>
+<strong>后果：</strong>模型无法区分各自的影响，系数不稳定<br>
+<strong>检验：</strong>estat vif（方差膨胀因子）<br><br>
+<strong>判断标准：</strong><br>
+• VIF < 5 → 正常 ✅<br>
+• 5 < VIF < 10 → 需要关注 ⚠️<br>
+• VIF > 10 → 严重共线性，要处理 ❌<br><br>
+<strong>处理办法：</strong>删掉高度相关的变量之一，或用岭回归
+</div>
+<div class="section-title">📋 完整的学术论文实证流程</div>
+<div class="interpret">
+<strong>第1步：</strong>描述统计（summarize）——了解数据的分布<br>
+<strong>第2步：</strong>基准回归（reg Y X1 X2）——核心模型<br>
+<strong>第3步：</strong>加入控制变量（reg Y X1 X2 C1 C2）——排除其他解释<br>
+<strong>第4步：</strong>诊断检验（hettest + vif）——确认模型可靠<br>
+<strong>第5步：</strong>稳健性检验（换变量、换样本、换方法）——证明结果不是凑出来的<br>
+<strong>第6步：</strong>esttab 导出 → 粘贴到论文里<br><br>
+一个完整的实证会计研究，就是这个六步流程的反复迭代。
+</div>
+<a class="file-link" href="实证分析进阶.do">📄 查看完整 do-file（含方向1和方向3）</a>
+</div>
+
+<div class="note-box">
+<strong>📌 关于 encode 命令：</strong><br><br>
+之前遇到报错 "string variables may not be used as factor variables"——字符串不能直接进回归方程。<br><br>
+<code style="color:#60a5fa;">encode industry, gen(ind_cat)</code> 把"制造业"、"服务业"、"科技业"转换为数字（1=制造业, 2=服务业, 3=科技业），Stata 记住对应关系，然后用 <code style="color:#60a5fa;">i.ind_cat</code> 放入回归。<br><br>
+<strong>为什么有这个设计？</strong> OLS 是纯数学运算，只能吃数字不能吃文字。encode 就是翻译官。Python 的 <code style="color:#60a5fa;">get_dummies()</code> 干同一件事。
+</div>
+<div class="note-box">
+<strong>📌 作品集用途：</strong><br>
+• <strong>复习用：</strong> 每个项目写清楚为什么做、怎么做、结果怎么读<br>
+• <strong>展示用：</strong> 面试可以说独立做过完整实证分析——数据清洗→建模→解读<br>
+• <strong>证明能力：</strong> 真实跑通过的 Stata do-file + Python 脚本 + 交互式 HTML
+</div>
+<div class="footer-text">实证分析作品集 · Xing · 山东大学 会计学 · 2026 Summer</div>
+</div>
+</body>
+</html>

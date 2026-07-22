@@ -1,0 +1,547 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1.0">
+ <title>智慧物流与工业智能沙盘 - Tsinghua SZ Style Demo</title>
+ <style>
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #e2e8f0; padding: 16px; }
+   .container { max-width: 1400px; margin: 0 auto; }
+   header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+   header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+   header h1 small { font-size: 11px; font-weight: 400; background: #1e293b; padding: 2px 10px; border-radius: 8px; color: #64748b; }
+   header .status-bar { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+   .status-dot.green { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,.5); }
+   .status-dot.yellow { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,.5); }
+   .status-dot.red { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,.5); }
+   .grid { display: grid; grid-template-columns: 1fr 340px; gap: 12px; }
+   @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+   .canvas-panel { background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; overflow: hidden; }
+   .canvas-panel canvas { display: block; width: 100%; aspect-ratio: 16/10; }
+   .canvas-title { padding: 8px 14px; font-size: 11px; color: #475569; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; }
+   .sidebar { display: flex; flex-direction: column; gap: 10px; }
+   .card { background: #0f172a; border-radius: 10px; border: 1px solid #1e293b; padding: 14px; }
+   .card-title { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+   .sensor-grid { display: grid; gap: 8px; }
+   .sensor-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #0b1120; border-radius: 6px; font-size: 12px; }
+   .sensor-row .zone { color: #94a3b8; min-width: 70px; }
+   .sensor-row .reading { font-weight: 600; min-width: 55px; text-align: right; }
+   .sensor-row .status { font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+   .inv-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+   .inv-table th { text-align: left; color: #64748b; font-weight: 500; padding: 4px 6px; border-bottom: 1px solid #1e293b; }
+   .inv-table td { padding: 4px 6px; border-bottom: 1px solid #1e293b; }
+   .inv-table tr:last-child td { border-bottom: none; }
+   .alert-feed { max-height: 140px; overflow-y: auto; font-size: 11px; }
+   .alert-feed::-webkit-scrollbar { width: 4px; }
+   .alert-feed::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+   .alert-item { display: flex; gap: 6px; padding: 4px 0; border-bottom: 1px solid #1e293b; align-items: flex-start; }
+   .alert-item:last-child { border-bottom: none; }
+   .alert-item .time { color: #475569; min-width: 50px; }
+   .alert-item .msg { color: #94a3b8; line-height: 1.4; }
+   .alert-item .msg.warn { color: #f59e0b; }
+   .alert-item .msg.error { color: #ef4444; }
+   .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+   .btn { padding: 6px 14px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+   .btn-primary { background: #3b82f6; color: #fff; }
+   .btn-primary:hover { background: #2563eb; }
+   .btn-danger { background: #dc2626; color: #fff; }
+   .btn-danger:hover { background: #b91c1c; }
+   .btn-success { background: #059669; color: #fff; }
+   .btn-success:hover { background: #047857; }
+   .btn-secondary { background: #1e293b; color: #94a3b8; }
+   .btn-secondary:hover { background: #334155; }
+   .tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+   .tag.normal { background: rgba(16,185,129,.15); color: #10b981; }
+   .tag.warning { background: rgba(245,158,11,.15); color: #f59e0b; }
+   .tag.critical { background: rgba(239,68,68,.15); color: #ef4444; }
+   .footer { text-align: center; margin-top: 14px; font-size: 11px; color: #334155; }
+   .dataflow { display: flex; align-items: center; gap: 4px; padding: 6px 0; }
+   .dataflow .node { font-size: 10px; padding: 4px 8px; background: #1e293b; border-radius: 4px; color: #64748b; white-space: nowrap; }
+   .dataflow .node.active { background: #3b82f6; color: #fff; }
+   .dataflow .arrow { color: #334155; font-size: 14px; }
+   .dataflow .arrow.active { color: #3b82f6; }
+   .ttl { font-size: 11px; color: #475569; margin-top: 4px; }
+ </style>
+ </head>
+ <body>
+ <div class="container">
+   <header>
+     <div>
+       <h1>🏭 智慧物流与工业智能沙盘 <small>IoT + Automation Demo</small></h1>
+       <div class="ttl">参考清华深研院「电子信息（智慧物流与工业智能）」方向设计 · 模拟智能仓储+IoT+自动化调度</div>
+     </div>
+     <div class="status-bar">
+       <span><span class="status-dot green" id="sysStatusDot"></span> 系统 <span id="sysStatusText">运行中</span></span>
+       <span id="clockDisplay" style="color:#64748b;font-family:monospace;">--:--:--</span>
+     </div>
+   </header>
+   <div class="grid">
+     <div class="canvas-panel">
+       <div class="canvas-title">
+         <span>📡 智能仓储3D俯视图 | IoT传感器覆盖 · AGV路径 · 分区管理</span>
+         <span id="zoneCount">监控区: 3</span>
+       </div>
+       <canvas id="whCanvas"></canvas>
+     </div>
+     <div class="sidebar">
+       <div class="card">
+         <div class="card-title">🌡️ IoT传感器实时数据 <span id="sensorCount" style="color:#475569;">3/3 在线</span></div>
+         <div class="sensor-grid" id="sensorGrid">
+           <div class="sensor-row"><span class="zone">A区(常温)</span><span>🌡️ <span class="reading" id="t1">24.5°C</span></span><span>💧 <span class="reading" id="h1">45%</span></span><span class="tag normal" id="s1tag">正常</span></div>
+           <div class="sensor-row"><span class="zone">B区(冷藏)</span><span>🌡️ <span class="reading" id="t2">3.2°C</span></span><span>💧 <span class="reading" id="h2">82%</span></span><span class="tag normal" id="s2tag">正常</span></div>
+           <div class="sensor-row"><span class="zone">C区(精密)</span><span>🌡️ <span class="reading" id="t3">22.0°C</span></span><span>💧 <span class="reading" id="h3">38%</span></span><span class="tag normal" id="s3tag">正常</span></div>
+         </div>
+       </div>
+       <div class="card">
+         <div class="card-title">📦 RFID库存追踪 <span id="invCount" style="color:#475569;">12件</span></div>
+         <table class="inv-table">
+           <thead><tr><th>ID</th><th>品名</th><th>位置</th><th>状态</th></tr></thead>
+           <tbody id="invBody"></tbody>
+         </table>
+       </div>
+       <div class="card">
+         <div class="card-title">⚠️ 事件告警 <span id="alertCount" style="color:#475569;">0</span></div>
+         <div class="alert-feed" id="alertFeed">
+           <div style="color:#475569;font-size:11px;padding:8px 0;text-align:center;">系统运行正常，无异常事件</div>
+         </div>
+       </div>
+       <div class="card">
+         <div class="card-title">🎮 智能控制</div>
+         <div class="btn-group">
+           <button class="btn btn-danger" onclick="simulateAnomaly()">⚠️ 模拟传感器异常</button>
+           <button class="btn btn-success" onclick="dispatchAGV()">🤖 调度AGV</button>
+           <button class="btn btn-secondary" onclick="addInventory()">📦 入库一批</button>
+           <button class="btn btn-secondary" onclick="resetSim()">🔄 重置</button>
+         </div>
+       </div>
+       <div class="card">
+         <div class="card-title">🔗 数据链路</div>
+         <div class="dataflow" id="dataFlow">
+           <span class="node active" id="df1">📡 传感器</span>
+           <span class="arrow active" id="da1">→</span>
+           <span class="node" id="df2">📡 边缘网关</span>
+           <span class="arrow" id="da2">→</span>
+           <span class="node" id="df3">☁️ 云端平台</span>
+           <span class="arrow" id="da3">→</span>
+           <span class="node" id="df4">📊 数字孪生</span>
+         </div>
+       </div>
+     </div>
+   </div>
+   <div class="footer">智慧物流与工业智能沙盘 · 模拟IoT数据采集→边缘计算→云端分析→数字孪生展示完整链路</div>
+ </div>
+ 
+ <script>
+ const canvas = document.getElementById('whCanvas');
+ const ctx = canvas.getContext('2d');
+ 
+ // Warehouse state
+ let agvPos = 0;
+ let agvDir = 1;
+ let agvActive = false;
+ let agvTarget = 0;
+ let alertCount = 0;
+ let simTime = 0;
+ let sensorData = [
+   { temp: 24.5, humid: 45, status: 'normal', zone: 'A区(常温)', minT: 18, maxT: 30, minH: 30, maxH: 60 },
+   { temp: 3.2, humid: 82, status: 'normal', zone: 'B区(冷藏)', minT: -2, maxT: 8, minH: 70, maxH: 95 },
+   { temp: 22.0, humid: 38, status: 'normal', zone: 'C区(精密)', minT: 18, maxT: 24, minH: 30, maxH: 50 },
+ ];
+ let inventory = [
+   { id: 'PLT-001', name: '电子元件', zone: 'A3', status: '在库' },
+   { id: 'PLT-002', name: '冷链药品', zone: 'B1', status: '在库' },
+   { id: 'PLT-003', name: '精密仪器', zone: 'C2', status: '在库' },
+   { id: 'PLT-004', name: '包装材料', zone: 'A5', status: '在库' },
+   { id: 'PLT-005', name: '生鲜食品', zone: 'B3', status: '拣选中' },
+   { id: 'PLT-006', name: '半导体', zone: 'C1', status: '在库' },
+   { id: 'PLT-007', name: '日用百货', zone: 'A2', status: '在库' },
+   { id: 'PLT-008', name: '疫苗试剂', zone: 'B2', status: '在库' },
+   { id: 'PLT-009', name: '光学镜片', zone: 'C3', status: '质检中' },
+   { id: 'PLT-010', name: '五金件', zone: 'A4', status: '在库' },
+   { id: 'PLT-011', name: '乳制品', zone: 'B4', status: '待出库' },
+   { id: 'PLT-012', name: '传感器模组', zone: 'C4', status: '在库' },
+ ];
+ let alerts = [];
+ 
+ function resizeCanvas() {
+   const rect = canvas.parentElement.getBoundingClientRect();
+   const w = rect.width - 2;
+   canvas.width = w * (window.devicePixelRatio || 1);
+   canvas.height = w * 0.625 * (window.devicePixelRatio || 1);
+   canvas.style.width = w + 'px';
+   canvas.style.height = (w * 0.625) + 'px';
+ }
+ 
+ function drawWarehouse() {
+   const w = canvas.width, h = canvas.height;
+   const dpr = window.devicePixelRatio || 1;
+   ctx.clearRect(0, 0, w, h);
+   
+   const pad = 30 * dpr;
+   const fw = w - 2 * pad, fh = h - 2 * pad;
+   const left = pad, top = pad;
+   
+   // Floor
+   ctx.fillStyle = '#0f172a';
+   ctx.fillRect(0, 0, w, h);
+   
+   // Grid lines
+   ctx.strokeStyle = '#1a2332';
+   ctx.lineWidth = 0.5 * dpr;
+   for (let x = 0; x < w; x += 50 * dpr) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+   for (let y = 0; y < h; y += 50 * dpr) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+   
+   // Warehouse border
+   ctx.strokeStyle = '#334155';
+   ctx.lineWidth = 2 * dpr;
+   ctx.strokeRect(left, top, fw, fh);
+   
+   // Zone labels
+   ctx.font = `${10 * dpr}px sans-serif`;
+   ctx.textAlign = 'center';
+   
+   // Zone A - General storage (left side)
+   ctx.fillStyle = 'rgba(59,130,246,0.06)';
+   ctx.fillRect(left, top, fw * 0.35, fh);
+   ctx.fillStyle = '#3b82f6';
+   ctx.font = `${9 * dpr}px sans-serif`;
+   ctx.textAlign = 'left';
+   ctx.fillText('A区 · 常温仓储', left + 8 * dpr, top + 14 * dpr);
+   
+   // Zone B - Cold storage (middle)
+   ctx.fillStyle = 'rgba(16,185,129,0.06)';
+   ctx.fillRect(left + fw * 0.35, top, fw * 0.3, fh);
+   ctx.fillStyle = '#10b981';
+   ctx.fillText('B区 · 冷链仓储 2~8°C', left + fw * 0.35 + 8 * dpr, top + 14 * dpr);
+   
+   // Zone C - Precision (right side)
+   ctx.fillStyle = 'rgba(139,92,246,0.06)';
+   ctx.fillRect(left + fw * 0.65, top, fw * 0.35, fh);
+   ctx.fillStyle = '#8b5cf6';
+   ctx.fillText('C区 · 精密品控 恒温恒湿', left + fw * 0.65 + 8 * dpr, top + 14 * dpr);
+   
+   // Shelves (small rectangles in each zone)
+   const shelfW = 16 * dpr, shelfH = 12 * dpr;
+   const shelfGap = 22 * dpr;
+   ctx.fillStyle = '#1e293b';
+   ctx.strokeStyle = '#334155';
+   ctx.lineWidth = 1 * dpr;
+   
+   for (let zone = 1; zone <= 3; zone++) {
+     const zx = zone === 1 ? left + 20 * dpr : zone === 2 ? left + fw * 0.35 + 16 * dpr : left + fw * 0.65 + 16 * dpr;
+     const zw = zone === 1 ? fw * 0.35 - 30 * dpr : zone === 2 ? fw * 0.3 - 24 * dpr : fw * 0.35 - 30 * dpr;
+     const rows = 4, cols = 3;
+     for (let r = 0; r < rows; r++) {
+       for (let c = 0; c < cols; c++) {
+         const sx = zx + (c + 0.5) * zw / cols - shelfW / 2;
+         const sy = top + 40 * dpr + r * (fh - 60 * dpr) / rows + (fh - 60 * dpr) / (rows * 2) - shelfH / 2;
+         ctx.fillRect(sx, sy, shelfW, shelfH);
+         ctx.strokeRect(sx, sy, shelfW, shelfH);
+         // Shelf label
+         ctx.fillStyle = '#475569';
+         ctx.font = `${6 * dpr}px sans-serif`;
+         ctx.textAlign = 'center';
+         ctx.textBaseline = 'middle';
+         ctx.fillText(`${String.fromCharCode(64 + zone)}${r * cols + c + 1}`, sx + shelfW/2, sy + shelfH/2);
+         ctx.fillStyle = '#1e293b';
+       }
+     }
+   }
+   
+   // Receiving dock
+   const dockY = top + fh - 18 * dpr;
+   ctx.fillStyle = '#1e293b';
+   ctx.fillRect(left + 10 * dpr, dockY, 80 * dpr, 16 * dpr);
+   ctx.strokeStyle = '#475569';
+   ctx.lineWidth = 1 * dpr;
+   ctx.strokeRect(left + 10 * dpr, dockY, 80 * dpr, 16 * dpr);
+   ctx.fillStyle = '#64748b';
+   ctx.font = `${7 * dpr}px sans-serif`;
+   ctx.textAlign = 'center';
+   ctx.textBaseline = 'middle';
+   ctx.fillText('📥 收货区', left + 50 * dpr, dockY + 8 * dpr);
+   
+   // Shipping dock
+   ctx.fillStyle = '#1e293b';
+   ctx.fillRect(left + fw - 90 * dpr, dockY, 80 * dpr, 16 * dpr);
+   ctx.strokeStyle = '#475569';
+   ctx.strokeRect(left + fw - 90 * dpr, dockY, 80 * dpr, 16 * dpr);
+   ctx.fillStyle = '#64748b';
+   ctx.fillText('📤 发货区', left + fw - 50 * dpr, dockY + 8 * dpr);
+   
+   // AGV path (main corridor)
+   ctx.strokeStyle = 'rgba(59,130,246,0.15)';
+   ctx.lineWidth = 3 * dpr;
+   ctx.setLineDash([6 * dpr, 4 * dpr]);
+   const pathY = top + fh * 0.5;
+   ctx.beginPath();
+   ctx.moveTo(left + 10 * dpr, pathY);
+   ctx.lineTo(left + fw - 10 * dpr, pathY);
+   ctx.stroke();
+   ctx.setLineDash([]);
+   
+   // Cross paths
+   ctx.strokeStyle = 'rgba(59,130,246,0.08)';
+   ctx.lineWidth = 2 * dpr;
+   ctx.setLineDash([4 * dpr, 4 * dpr]);
+   for (let i = 1; i <= 2; i++) {
+     const cx = left + fw * i / 3;
+     ctx.beginPath(); ctx.moveTo(cx, top + 20 * dpr); ctx.lineTo(cx, top + fh - 20 * dpr); ctx.stroke();
+   }
+   ctx.setLineDash([]);
+   
+   // Sensor nodes (blinking dots in each zone)
+   const zones = [
+     { x: left + fw * 0.15, y: top + fh * 0.25, color: '#3b82f6' },
+     { x: left + fw * 0.5, y: top + fh * 0.25, color: '#10b981' },
+     { x: left + fw * 0.85, y: top + fh * 0.25, color: '#8b5cf6' },
+   ];
+   zones.forEach((z, i) => {
+     const pulse = Math.sin(simTime * 0.003 + i) * 0.3 + 0.7;
+     ctx.beginPath();
+     ctx.arc(z.x, z.y, 6 * dpr * pulse, 0, Math.PI * 2);
+     ctx.fillStyle = sensorData[i].status === 'alarm' ? '#ef4444' : z.color;
+     ctx.globalAlpha = 0.3 + pulse * 0.4;
+     ctx.fill();
+     ctx.globalAlpha = 1;
+     ctx.beginPath();
+     ctx.arc(z.x, z.y, 4 * dpr, 0, Math.PI * 2);
+     ctx.fillStyle = sensorData[i].status === 'alarm' ? '#ef4444' : z.color;
+     ctx.fill();
+     ctx.fillStyle = '#64748b';
+     ctx.font = `${7 * dpr}px sans-serif`;
+     ctx.textAlign = 'center';
+     ctx.textBaseline = 'bottom';
+     const zoneNames = ['A区 传感器', 'B区 传感器', 'C区 传感器'];
+     ctx.fillText(zoneNames[i], z.x, z.y - 10 * dpr);
+   });
+   
+   // AGV
+   const agvX = left + 20 * dpr + (fw - 40 * dpr) * (agvPos / 100);
+   const agvY = pathY;
+   // Glow
+   const grad = ctx.createRadialGradient(agvX, agvY, 0, agvX, agvY, 20 * dpr);
+   grad.addColorStop(0, 'rgba(59,130,246,0.3)');
+   grad.addColorStop(1, 'rgba(59,130,246,0)');
+   ctx.fillStyle = grad;
+   ctx.beginPath();
+   ctx.arc(agvX, agvY, 20 * dpr, 0, Math.PI * 2);
+   ctx.fill();
+   // Body
+   ctx.fillStyle = agvActive ? '#3b82f6' : '#1e293b';
+   ctx.strokeStyle = '#60a5fa';
+   ctx.lineWidth = 1.5 * dpr;
+   ctx.beginPath();
+   ctx.arc(agvX, agvY, 8 * dpr, 0, Math.PI * 2);
+   ctx.fill();
+   ctx.stroke();
+   ctx.fillStyle = '#fff';
+   ctx.font = `${7 * dpr}px sans-serif`;
+   ctx.textAlign = 'center';
+   ctx.textBaseline = 'middle';
+   ctx.fillText('AGV', agvX, agvY);
+   
+   // Data flow animation
+   if (simTime % 60 < 30) {
+     const dotProgress = (simTime % 30) / 30;
+     const flowY = top + 8 * dpr;
+     const flowX = left + fw * dotProgress;
+     ctx.fillStyle = `rgba(59,130,246,${0.3 + 0.5 * Math.sin(dotProgress * Math.PI)})`;
+     ctx.beginPath();
+     ctx.arc(flowX, flowY, 3 * dpr, 0, Math.PI * 2);
+     ctx.fill();
+   }
+   
+   // Title bottom
+   ctx.fillStyle = '#334155';
+   ctx.font = `${8 * dpr}px sans-serif`;
+   ctx.textAlign = 'center';
+   ctx.textBaseline = 'bottom';
+   ctx.fillText('IoT数据采集 → 边缘计算 → 云端分析 → AGV调度 · 仓储管理系统实时可视化', w/2, h - 4 * dpr);
+ }
+ 
+ function updateSensors() {
+   const types = ['t1','t2','t3','h1','h2','h3'];
+   sensorData.forEach((s, i) => {
+     if (s.status === 'normal') {
+       s.temp += (Math.random() - 0.5) * 0.4;
+       s.humid += (Math.random() - 0.5) * 0.6;
+       s.temp = Math.max(s.minT, Math.min(s.maxT, s.temp));
+       s.humid = Math.max(10, Math.min(100, s.humid));
+     }
+     document.getElementById(`t${i+1}`).textContent = s.temp.toFixed(1) + '°C';
+     document.getElementById(`h${i+1}`).textContent = s.humid.toFixed(0) + '%';
+     const tag = document.getElementById(`s${i+1}tag`);
+     if (s.status === 'alarm') {
+       tag.className = 'tag critical';
+       tag.textContent = '⚠️ 异常';
+     } else {
+       // Check if within range
+       const tempOk = s.temp >= s.minT && s.temp <= s.maxT;
+       const humidOk = s.humid >= s.minH && s.humid <= s.maxH;
+       if (tempOk && humidOk) { tag.className = 'tag normal'; tag.textContent = '正常'; }
+       else { tag.className = 'tag warning'; tag.textContent = '偏高'; }
+     }
+   });
+ }
+ 
+ function updateInventory() {
+   const body = document.getElementById('invBody');
+   let html = '';
+   inventory.slice(0, 8).forEach(item => {
+     const statusClass = item.status === '在库' ? 'normal' : item.status === '拣选中' || item.status === '待出库' ? 'warning' : 'warning';
+     html += `<tr><td style="color:#64748b;">${item.id}</td><td>${item.name}</td><td style="color:#64748b;">${item.zone}</td><td><span class="tag ${statusClass}">${item.status}</span></td></tr>`;
+   });
+   body.innerHTML = html;
+   document.getElementById('invCount').textContent = inventory.length + '件';
+ }
+ 
+ function addAlert(msg, type) {
+   const time = new Date().toLocaleTimeString();
+   alerts.unshift({ time, msg, type });
+   if (alerts.length > 20) alerts.pop();
+   renderAlerts();
+ }
+ 
+ function renderAlerts() {
+   const feed = document.getElementById('alertFeed');
+   if (alerts.length === 0) {
+     feed.innerHTML = '<div style="color:#475569;font-size:11px;padding:8px 0;text-align:center;">系统运行正常，无异常事件</div>';
+     document.getElementById('alertCount').textContent = '0';
+     return;
+   }
+   let html = '';
+   alerts.forEach(a => {
+     const cls = a.type === 'error' ? 'error' : a.type === 'warn' ? 'warn' : '';
+     html += `<div class="alert-item"><span class="time">${a.time}</span><span class="msg ${cls}">${a.msg}</span></div>`;
+   });
+   feed.innerHTML = html;
+   document.getElementById('alertCount').textContent = alerts.length;
+ }
+ 
+ // Interactions
+ function simulateAnomaly() {
+   const zone = Math.floor(Math.random() * 3);
+   const type = Math.random() > 0.5 ? 'temp spike' : 'humidity drop';
+   sensorData[zone].status = 'alarm';
+   if (type === 'temp spike') {
+     sensorData[zone].temp += 8 + Math.random() * 5;
+     addAlert(`⚠️ ${sensorData[zone].zone} ${type}: ${sensorData[zone].temp.toFixed(1)}°C 超出阈值！`, 'error');
+   } else {
+     sensorData[zone].humid = Math.max(0, sensorData[zone].humid - 30);
+     addAlert(`⚠️ ${sensorData[zone].zone} ${type}: ${sensorData[zone].humid.toFixed(0)}% 超出阈值！`, 'error');
+   }
+   // Auto recover after 5s
+   setTimeout(() => {
+     sensorData[zone].status = 'normal';
+     addAlert(`✅ ${sensorData[zone].zone} 传感器已恢复`, 'info');
+   }, 5000);
+   document.getElementById('sysStatusText').textContent = '有异常';
+   document.getElementById('sysStatusDot').className = 'status-dot yellow';
+   setTimeout(() => {
+     const hasAlarm = sensorData.some(s => s.status === 'alarm');
+     document.getElementById('sysStatusText').textContent = hasAlarm ? '有异常' : '运行中';
+     document.getElementById('sysStatusDot').className = hasAlarm ? 'status-dot yellow' : 'status-dot green';
+   }, 300);
+ }
+ 
+ function dispatchAGV() {
+   if (agvActive) { addAlert('ℹ️ AGV 正在执行任务，请等待', 'info'); return; }
+   agvActive = true;
+   agvTarget = Math.random() > 0.5 ? 85 + Math.random() * 10 : 5 + Math.random() * 10;
+   addAlert('🤖 AGV #01 已调度，前往 ' + (agvTarget > 50 ? 'B区拣货' : 'A区补货'), 'info');
+   let startPos = agvPos;
+   const dist = agvTarget - startPos;
+   let progress = 0;
+   const interval = setInterval(() => {
+     progress += 0.02;
+     agvPos = startPos + dist * Math.min(1, progress);
+     if (progress >= 1) {
+       clearInterval(interval);
+       agvActive = false;
+       addAlert('✅ AGV #01 任务完成，已就位', 'info');
+       // Update inventory
+       if (agvTarget > 50) {
+         const item = inventory.find(i => i.status === '在库');
+         if (item) item.status = '拣选中';
+         addAlert('📦 拣选: ' + (item ? item.name : '待定'), 'info');
+       }
+       setTimeout(() => { if (item) { item.status = '待出库'; updateInventory(); } }, 2000);
+       updateInventory();
+     }
+   }, 30);
+ }
+ 
+ function addInventory() {
+   const count = Math.floor(Math.random() * 3) + 1;
+   const names = ['电子元件', '包装耗材', '化工原料', '日用品', '食品原料', '机械零件'];
+   const zones = ['A2','A3','A4','B2','B3','C1','C3'];
+   for (let i = 0; i < count; i++) {
+     const idx = inventory.length + 1;
+     inventory.push({
+       id: 'PLT-' + String(idx).padStart(3,'0'),
+       name: names[Math.floor(Math.random() * names.length)],
+       zone: zones[Math.floor(Math.random() * zones.length)],
+       status: '在库'
+     });
+   }
+   addAlert(`📦 入库 ${count} 件商品，已更新RFID库存`, 'info');
+   updateInventory();
+ }
+ 
+ function resetSim() {
+   sensorData.forEach(s => s.status = 'normal');
+   alerts = [];
+   renderAlerts();
+   agvActive = false;
+   document.getElementById('sysStatusText').textContent = '运行中';
+   document.getElementById('sysStatusDot').className = 'status-dot green';
+   addAlert('🔄 系统已重置', 'info');
+ }
+ 
+ // Clock
+ function updateClock() {
+   document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString();
+ }
+ 
+ // Main loop
+ let dataFlowIdx = 0;
+ function tick() {
+   simTime++;
+   updateSensors();
+   
+   // Animate AGV when idle
+   if (!agvActive) {
+     agvPos += 0.15 * agvDir;
+     if (agvPos > 95 || agvPos < 5) agvDir *= -1;
+   }
+   
+   // Data flow animation (cycle through nodes)
+   if (simTime % 120 === 0) {
+     dataFlowIdx = (dataFlowIdx + 1) % 4;
+     for (let i = 1; i <= 4; i++) {
+       document.getElementById(`df${i}`).className = 'node' + (i <= dataFlowIdx + 1 ? ' active' : '');
+       if (i < 4) document.getElementById(`da${i}`).className = 'arrow' + (i <= dataFlowIdx ? ' active' : '');
+     }
+   }
+   
+   drawWarehouse();
+ }
+ 
+ // Init
+ function init() {
+   resizeCanvas();
+   updateInventory();
+   addAlert('🚀 系统启动 · IoT传感器已连接 · AGV待命', 'info');
+   setInterval(updateClock, 1000);
+   setInterval(tick, 50);
+   updateClock();
+ }
+ 
+ window.addEventListener('resize', resizeCanvas);
+ window.onload = init;
+ </script>
+ </body>
+ </html>

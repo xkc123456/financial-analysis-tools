@@ -1,0 +1,374 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>审计线索沙盒 - Audit Trail Sandbox</title>
+ <style>
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6fa; color: #1a1a2e; padding: 24px; }
+   .container { max-width: 1100px; margin: 0 auto; }
+   h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+   h1 span { background: #e74c3c; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+   .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+   .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+   .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+   .card h2 .badge { font-size: 11px; font-weight: 400; color: #6b7280; }
+   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+   .form-group { margin-bottom: 8px; }
+   .form-group label { display: block; font-size: 12px; font-weight: 500; color: #4b5563; margin-bottom: 3px; }
+   .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; outline: none; transition: border .15s; }
+   .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+   .form-group .hint { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+   .section-label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin: 12px 0 8px; }
+   .btn-group { display: flex; gap: 8px; margin: 14px 0 0; }
+   .btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+   .btn-primary { background: #2563eb; color: #fff; }
+   .btn-primary:hover { background: #1d4ed8; }
+   .btn-secondary { background: #e5e7eb; color: #374151; }
+   .btn-secondary:hover { background: #d1d5db; }
+   .btn-success { background: #059669; color: #fff; }
+   .btn-success:hover { background: #047857; }
+   .signal { padding: 12px 14px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid; }
+   .signal.critical { background: #fef2f2; border-color: #ef4444; }
+   .signal.warning { background: #fffbeb; border-color: #f59e0b; }
+   .signal.info { background: #eff6ff; border-color: #3b82f6; }
+   .signal.ok { background: #ecfdf5; border-color: #10b981; }
+   .signal .sig-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+   .signal .sig-desc { font-size: 12px; color: #4b5563; line-height: 1.5; }
+   .signal .sig-rule { font-size: 11px; color: #9ca3af; margin-top: 4px; font-family: 'SFMono-Regular', Consolas, monospace; }
+   .ratio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+   .ratio-item { background: #f9fafb; border-radius: 6px; padding: 10px; text-align: center; }
+   .ratio-item .r-value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+   .ratio-item .r-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+   .ratio-item .r-status { font-size: 10px; margin-top: 2px; }
+   .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
+   .empty-state p { font-size: 14px; margin-top: 8px; }
+   .pill { display: inline-block; font-size: 10px; padding: 1px 8px; border-radius: 10px; font-weight: 500; }
+   .pill.danger { background: #fecaca; color: #b91c1c; }
+   .pill.warn { background: #fde68a; color: #92400e; }
+   .pill.good { background: #a7f3d0; color: #065f46; }
+   .tooltip-toggle { cursor: pointer; border-bottom: 1px dashed #9ca3af; }
+   .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 20px; }
+ </style>
+ </head>
+ <body>
+ <div class="container">
+   <h1>🔍 审计线索沙盒 <span>v0.1</span></h1>
+   <p class="subtitle">输入一家公司的财务数据，系统自动分析并生成审计线索——学习财务分析与审计思维的交互式工具</p>
+   <div class="grid">
+     <div class="card">
+       <h2>📊 输入财务数据 <span class="badge">单位为万元</span></h2>
+       
+       <div class="section-label">📌 利润表数据</div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>营业收入</label>
+           <input type="number" id="revenue" value="10000">
+         </div>
+         <div class="form-group">
+           <label>营业成本</label>
+           <input type="number" id="cogs" value="6500">
+         </div>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>净利润</label>
+           <input type="number" id="netProfit" value="1500">
+         </div>
+       </div>
+       
+       <div class="section-label">📌 资产负债表数据（本期末）</div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>应收账款</label>
+           <input type="number" id="ar" value="3200">
+         </div>
+         <div class="form-group">
+           <label>存货</label>
+           <input type="number" id="inventory" value="2800">
+         </div>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>总资产</label>
+           <input type="number" id="totalAssets" value="18000">
+         </div>
+       </div>
+       
+       <div class="section-label">📌 对上期数据（用于趋势分析）</div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>上年营业收入</label>
+           <input type="number" id="prevRevenue" value="9500">
+         </div>
+         <div class="form-group">
+           <label>上年应收账款</label>
+           <input type="number" id="prevAr" value="2200">
+         </div>
+       </div>
+       <div class="form-row">
+         <div class="form-group">
+           <label>上年存货</label>
+           <input type="number" id="prevInventory" value="2400">
+         </div>
+         <div class="form-group">
+           <label>经营活动现金流</label>
+           <input type="number" id="cashFlow" value="800">
+         </div>
+       </div>
+       
+       <div class="btn-group">
+         <button class="btn btn-primary" onclick="runAnalysis()">🔄 运行分析</button>
+         <button class="btn btn-secondary" onclick="loadRandom()">🎲 随机生成数据</button>
+         <button class="btn btn-secondary" onclick="loadTextbook()">📖 经典案例</button>
+       </div>
+     </div>
+     
+     <div class="card">
+       <h2 id="resultTitle">🔎 分析结果</h2>
+       <div id="resultContent">
+         <div class="empty-state">
+           <div style="font-size: 36px;">📋</div>
+           <p>输入财务数据后点击"运行分析"<br>系统会自动生成财务指标和审计线索</p>
+         </div>
+       </div>
+     </div>
+   </div>
+   <div class="footer">审计线索沙盒 · 基于基础审计逻辑的交互式教学工具 · 非专业审计软件</div>
+ </div>
+ 
+ <script>
+ function getV(id) { return parseFloat(document.getElementById(id).value) || 0; }
+ 
+ function pct(v) { return (v * 100).toFixed(1) + '%'; }
+ 
+ function runAnalysis() {
+   const d = {
+     revenue: getV('revenue'),
+     cogs: getV('cogs'),
+     netProfit: getV('netProfit'),
+     ar: getV('ar'),
+     inventory: getV('inventory'),
+     totalAssets: getV('totalAssets'),
+     prevRevenue: getV('prevRevenue'),
+     prevAr: getV('prevAr'),
+     prevInventory: getV('prevInventory'),
+     cashFlow: getV('cashFlow')
+   };
+   
+   // Compute ratios
+   const grossMargin = d.revenue > 0 ? (d.revenue - d.cogs) / d.revenue : 0;
+   const netMargin = d.revenue > 0 ? d.netProfit / d.revenue : 0;
+   const roa = d.totalAssets > 0 ? d.netProfit / d.totalAssets : 0;
+   const revenueGrowth = d.prevRevenue > 0 ? (d.revenue - d.prevRevenue) / d.prevRevenue : 0;
+   const arGrowth = d.prevAr > 0 ? (d.ar - d.prevAr) / d.prevAr : 0;
+   const invGrowth = d.prevInventory > 0 ? (d.inventory - d.prevInventory) / d.prevInventory : 0;
+   const arTurnover = d.ar > 0 ? d.revenue / d.ar : 0;
+   const invTurnover = d.inventory > 0 ? d.cogs / d.inventory : 0;
+   const cashToProfit = d.netProfit > 0 ? d.cashFlow / d.netProfit : 0;
+   
+   // Generate signals
+   const signals = [];
+   
+   // 1. AR growth vs Revenue growth
+   if (arGrowth > revenueGrowth + 0.15) {
+     signals.push({
+       level: 'critical',
+       title: '🚨 应收账款增速显著快于收入增速',
+       desc: `收入增长 ${pct(revenueGrowth)}，但应收账款增长 ${pct(arGrowth)}，两者差距超过15%。这可能意味着公司通过放宽信用政策来"创造"收入——俗称"塞货"。审计实务中这是收入舞弊的高危信号。`,
+       rule: `规则：应收账款增长率(${pct(arGrowth)}) - 收入增长率(${pct(revenueGrowth)}) > 15%`
+     });
+   } else if (arGrowth > revenueGrowth) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 应收账款增速高于收入增速',
+       desc: `收入增长 ${pct(revenueGrowth)}，应收账款增长 ${pct(arGrowth)}。小于15%的偏差不算极端，但应收账款回款能力需要额外关注。`,
+       rule: `规则：应收账款增长率 > 收入增长率，但差距 < 15%`
+     });
+   }
+   
+   // 2. Inventory growth vs COGS growth
+   const cogsGrowth = d.prevRevenue > 0 ? (d.cogs - (d.prevRevenue - d.prevRevenue * (d.cogs/d.revenue))) / (d.prevRevenue * (d.cogs/d.revenue)) : 0;
+   const prevCogs = d.prevRevenue > 0 ? d.prevRevenue * (d.cogs/d.revenue) - (d.cogs - d.prevRevenue * (d.cogs/d.revenue)) : 0;
+   const actualCogsGrowth = prevCogs > 0 ? (d.cogs - prevCogs) / prevCogs : 0;
+   
+   // Simplified: compare inventory growth to COGS change
+   const cogsRate = d.revenue > 0 ? d.cogs / d.revenue : 0;
+   const prevCogsEst = d.prevRevenue * cogsRate;
+   const cogsGrowthEst = prevCogsEst > 0 ? (d.cogs - prevCogsEst) / prevCogsEst : 0;
+   
+   if (invGrowth > cogsGrowthEst + 0.15 && d.inventory > 0) {
+     signals.push({
+       level: 'critical',
+       title: '🚨 存货增速显著快于营业成本增速',
+       desc: `存货增长 ${pct(invGrowth)}，而营业成本大致增长 ${pct(cogsGrowthEst)}。存货积压可能是产品滞销的信号，也可能存在存货跌价准备计提不足的风险。`,
+       rule: `规则：存货增长率(${pct(invGrowth)}) - 营业成本增长率(${pct(cogsGrowthEst)}) > 15%`
+     });
+   } else if (invGrowth > cogsGrowthEst && d.inventory > 0) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 存货增速高于成本增速',
+       desc: `存货增长 ${pct(invGrowth)} 略高于营业成本增长 ${pct(cogsGrowthEst)}。建议关注存货周转率的变化。`,
+       rule: `规则：存货增长率 > 营业成本增长率`
+     });
+   }
+   
+   // 3. Gross margin anomaly
+   if (grossMargin > 0.7) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 毛利率异常偏高',
+       desc: `毛利率 ${pct(grossMargin)}，如果不在奢侈品/医药/软件等高毛利行业，这个水平需要特别关注收入确认和成本结转的真实性。`,
+       rule: `规则：毛利率(${pct(grossMargin)}) > 70%`
+     });
+   } else if (grossMargin < 0.05 && grossMargin > 0) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 毛利率极低',
+       desc: `毛利率仅 ${pct(grossMargin)}，公司几乎不盈利。如果是正常经营，需关注持续经营能力；如果同行业毛利率远高于此，可能存在成本虚增。`,
+       rule: `规则：毛利率(${pct(grossMargin)}) < 5%`
+     });
+   }
+   
+   // 4. Net profit margin anomaly
+   if (netMargin > 0.3) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 净利率异常偏高',
+       desc: `净利率 ${pct(netMargin)}。如非轻资产/高科技行业，高净利率可能隐藏着非经常性损益或会计操纵。`,
+       rule: `规则：净利率(${pct(netMargin)}) > 30%`
+     });
+   }
+   
+   // 5. Cash flow vs profit
+   if (cashToProfit < 0.5 && d.netProfit > 0) {
+     signals.push({
+       level: 'critical',
+       title: '🚨 净利润"含金量"低',
+       desc: `净利润 ${d.netProfit}万元，但经营现金流仅 ${d.cashFlow}万元，现金利润比 ${cashToProfit.toFixed(2)}。利润没有变成现金，可能存在大量应收或利润虚增。这是财务造假最常见的信号之一。`,
+       rule: `规则：经营现金流/净利润 < 0.5（当前值 ${cashToProfit.toFixed(2)}）`
+     });
+   } else if (cashToProfit < 0.8 && d.netProfit > 0) {
+     signals.push({
+       level: 'info',
+       title: 'ℹ️ 现金利润比偏低',
+       desc: `净利润的 ${(cashToProfit * 100).toFixed(0)}% 转化为了现金，低于理想值。建议关注应收账款回收周期。`,
+       rule: `规则：0.5 ≤ 经营现金流/净利润(${cashToProfit.toFixed(2)}) < 0.8`
+     });
+   }
+   
+   // 6. ROA
+   if (roa < 0.01 && d.totalAssets > 0) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 总资产收益率极低',
+       desc: `ROA 仅 ${pct(roa)}，每百元资产创造的净利润不足1元。需关注资产利用效率或是否存在大量闲置/不良资产。`,
+       rule: `规则：ROA(${pct(roa)}) < 1%`
+     });
+   }
+   
+   // 7. AR turnover
+   if (arTurnover < 2 && d.ar > 0) {
+     signals.push({
+       level: 'warning',
+       title: '⚠️ 应收账款周转率偏低',
+       desc: `应收账款周转率 ${arTurnover.toFixed(2)}，意味着收回全部应收款需要超过180天。回款周期过长，资金占用严重。`,
+       rule: `规则：应收账款周转率(${arTurnover.toFixed(2)}) < 2`
+     });
+   }
+   
+   // 8. Revenue growth negative but AR growing
+   if (revenueGrowth < 0 && arGrowth > 0.1) {
+     signals.push({
+       level: 'critical',
+       title: '🚨 收入下滑但应收反增',
+       desc: `收入同比下降 ${pct(Math.abs(revenueGrowth))}，但应收账款却增长 ${pct(arGrowth)}。典型的"收入不够、应收来凑"模式，审计实务中高度敏感。`,
+       rule: `规则：收入增长率为负(${pct(revenueGrowth)}) 且 应收增长率(${pct(arGrowth)}) > 10%`
+     });
+   }
+   
+   // 9. No signals — healthy
+   if (signals.length === 0) {
+     signals.push({
+       level: 'ok',
+       title: '✅ 未发现明显异常信号',
+       desc: '基于输入数据的各项指标均在合理范围内。当然，审计线索只是初步筛查手段，真实的审计程序远不止于此。',
+       rule: ''
+     });
+   }
+   
+   // Render
+   const resultContent = document.getElementById('resultContent');
+   let html = '';
+   
+   // Ratios section
+   html += `<div style="margin-bottom: 16px;"><h3 style="font-size:13px;font-weight:600;margin-bottom:8px;color:#4b5563;">📈 核心财务比率</h3><div class="ratio-grid">`;
+   const ratios = [
+     { label: '毛利率', value: pct(grossMargin) },
+     { label: '净利率', value: pct(netMargin) },
+     { label: 'ROA', value: pct(roa) },
+     { label: '收入增长率', value: pct(revenueGrowth) },
+     { label: '应收增长率', value: pct(arGrowth) },
+     { label: '存货增长率', value: pct(invGrowth) },
+     { label: '应收周转率', value: arTurnover.toFixed(2) },
+     { label: '存货周转率', value: invTurnover.toFixed(2) },
+     { label: '现金/利润比', value: cashToProfit.toFixed(2) },
+   ];
+   ratios.forEach(r => {
+     html += `<div class="ratio-item"><div class="r-value">${r.value}</div><div class="r-label">${r.label}</div></div>`;
+   });
+   html += `</div></div>`;
+   
+   // Signals section
+   html += `<h3 style="font-size:13px;font-weight:600;margin-bottom:8px;color:#4b5563;border-top:1px solid #e5e7eb;padding-top:12px;">🚩 审计线索 (${signals.length})</h3>`;
+   signals.forEach(s => {
+     html += `<div class="signal ${s.level}">
+       <div class="sig-title">${s.title}</div>
+       <div class="sig-desc">${s.desc}</div>
+       ${s.rule ? `<div class="sig-rule">${s.rule}</div>` : ''}
+     </div>`;
+   });
+   
+   resultContent.innerHTML = html;
+ }
+ 
+ function loadRandom() {
+   const rand = (min, max) => Math.round(min + Math.random() * (max - min));
+   const revenue = rand(5000, 30000);
+   const cogs = rand(3000, Math.round(revenue * 0.85));
+   document.getElementById('revenue').value = revenue;
+   document.getElementById('cogs').value = cogs;
+   document.getElementById('netProfit').value = rand(100, Math.round(revenue * 0.25));
+   document.getElementById('ar').value = rand(500, Math.round(revenue * 0.5));
+   document.getElementById('inventory').value = rand(300, Math.round(cogs * 0.6));
+   document.getElementById('totalAssets').value = rand(8000, 50000);
+   document.getElementById('prevRevenue').value = rand(Math.round(revenue * 0.7), Math.round(revenue * 1.2));
+   document.getElementById('prevAr').value = rand(300, Math.round(document.getElementById('prevRevenue').value * 0.4));
+   document.getElementById('prevInventory').value = rand(200, Math.round(cogs * 0.4));
+   document.getElementById('cashFlow').value = rand(-500, Math.round(document.getElementById('netProfit').value * 1.2));
+   runAnalysis();
+ }
+ 
+ function loadTextbook() {
+   // A textbook red-flag case: revenue up but cash flow negative, AR skyrocketing
+   document.getElementById('revenue').value = 12000;
+   document.getElementById('cogs').value = 8000;
+   document.getElementById('netProfit').value = 1800;
+   document.getElementById('ar').value = 5500;
+   document.getElementById('inventory').value = 3200;
+   document.getElementById('totalAssets').value = 22000;
+   document.getElementById('prevRevenue').value = 9800;
+   document.getElementById('prevAr').value = 2500;
+   document.getElementById('prevInventory').value = 2600;
+   document.getElementById('cashFlow').value = 200;
+   runAnalysis();
+ }
+ 
+ // Run on load
+ loadRandom();
+ </script>
+ </body>
+ </html>
